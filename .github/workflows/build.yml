@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,5 +23,24 @@ jobs:
       - name: Gradle einrichten
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Build und Tests
-        run: ./gradlew build
+      - name: Kompilieren, ohne Tests
+        run: ./gradlew assemble
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: JDK bereitstellen
+        uses: actions/setup-java@v6
+        with:
+          distribution: zulu
+          java-version: 25
+
+      - name: Gradle einrichten
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Tests ausfuehren
+        run: ./gradlew test
