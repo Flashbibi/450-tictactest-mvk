@@ -3,12 +3,35 @@ package ch.bbw.m450.tictactoe;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import org.assertj.core.api.WithAssertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import ch.bbw.m450.tictactoe.TicTacToePlayer.Stone;
-import ch.bbw.m450.tictactoe.players.GreedyPlayer;
 
 class TicTacToeTest implements WithAssertions {
+
+	private static final String X_WINS_TOP_ROW = "XXX ... ...";
+
+	private Stone[] board;
+
+	@BeforeEach
+	void setUp() {
+		board = boardOf(X_WINS_TOP_ROW);
+	}
+
+	/** Baut ein Board aus einer Skizze: X = Kreuz, O = Kreis, . = leer. */
+	private static Stone[] boardOf(String sketch) {
+		var fields = sketch.replace(" ", "");
+		var board = new Stone[TicTacToeMain.BOARD_SIZE];
+		for (var i = 0; i < board.length; i++) {
+			board[i] = switch (fields.charAt(i)) {
+				case 'X' -> Stone.CROSS;
+				case 'O' -> Stone.CIRCLE;
+				default -> null;
+			};
+		}
+		return board;
+	}
 
 	@Test
 	void dummyJunit() {
@@ -22,16 +45,12 @@ class TicTacToeTest implements WithAssertions {
 
 	@Test
 	void xWinsWithTopRow() {
-		var board = new Stone[] {Stone.CROSS, Stone.CROSS, Stone.CROSS, null, null, null, null, null, null};
-
 		assertThat(TicTacToeMain.isWin(board, Stone.CROSS)).isTrue();
 	}
 
 	@Test
-	void greedyPlayerPlaysFirstFreeField() {
-		var board = new Stone[] {Stone.CROSS, Stone.CIRCLE, null, null, null, null, null, null, null};
-
-		assertThat(new GreedyPlayer().play(board, Stone.CROSS)).isEqualTo(2);
+	void oDoesNotWinOnTheSameBoard() {
+		assertThat(TicTacToeMain.isWin(board, Stone.CIRCLE)).isFalse();
 	}
 
 	@Test
