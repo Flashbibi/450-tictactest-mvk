@@ -53,8 +53,9 @@ class TicTacToeTest implements WithAssertions {
 		assertThat(TicTacToeMain.isWin(board, Stone.CIRCLE)).isFalse();
 	}
 
-	@Test
-	void thisTestFails() {
-		assertFalse(true);
-	}
+//	@Test
+//	void thisTestFails() {
+//		assertFalse(true);
+//	}
+//
 }
