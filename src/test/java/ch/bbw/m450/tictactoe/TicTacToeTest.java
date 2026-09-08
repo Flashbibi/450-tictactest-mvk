@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import org.assertj.core.api.WithAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import ch.bbw.m450.tictactoe.TicTacToePlayer.Stone;
 
@@ -51,6 +53,31 @@ class TicTacToeTest implements WithAssertions {
 	@Test
 	void circleDoesNotWinOnTheDrawBoard() {
 		assertThat(TicTacToeMain.isWin(board, Stone.CIRCLE)).isFalse();
+	}
+
+	@ParameterizedTest(name = "{0} gewonnen von {1}")
+	@CsvSource({
+			"XXX ... ..., CROSS",
+			"... OOO ..., CIRCLE",
+			"... ... XXX, CROSS",
+			"O.. O.. O.., CIRCLE",
+			".X. .X. .X., CROSS",
+			"..O ..O ..O, CIRCLE",
+			"X.. .X. ..X, CROSS",
+			"..O .O. O.., CIRCLE"
+	})
+	void detectsWinningLine(String sketch, Stone color) {
+		assertThat(TicTacToeMain.isWin(boardOf(sketch), color)).isTrue();
+	}
+
+	@ParameterizedTest(name = "{0} nicht gewonnen von {1}")
+	@CsvSource({
+			"... ... ..., CROSS",
+			"XX. OO. ..., CROSS",
+			"XXX ... ..., CIRCLE"
+	})
+	void detectsNoWinningLine(String sketch, Stone color) {
+		assertThat(TicTacToeMain.isWin(boardOf(sketch), color)).isFalse();
 	}
 
 //	@Test
