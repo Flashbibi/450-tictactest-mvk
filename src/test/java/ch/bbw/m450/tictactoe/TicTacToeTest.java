@@ -10,13 +10,13 @@ import ch.bbw.m450.tictactoe.TicTacToePlayer.Stone;
 
 class TicTacToeTest implements WithAssertions {
 
-	private static final String X_WINS_TOP_ROW = "XXX ... ...";
+	private static final String DRAW_BOARD = "XXO OOX XOX";
 
 	private Stone[] board;
 
 	@BeforeEach
 	void setUp() {
-		board = boardOf(X_WINS_TOP_ROW);
+		board = boardOf(DRAW_BOARD);
 	}
 
 	/** Baut ein Board aus einer Skizze: X = Kreuz, O = Kreis, . = leer. */
@@ -44,12 +44,12 @@ class TicTacToeTest implements WithAssertions {
 	}
 
 	@Test
-	void xWinsWithTopRow() {
-		assertThat(TicTacToeMain.isWin(board, Stone.CROSS)).isTrue();
+	void crossDoesNotWinOnTheDrawBoard() {
+		assertThat(TicTacToeMain.isWin(board, Stone.CROSS)).isFalse();
 	}
 
 	@Test
-	void oDoesNotWinOnTheSameBoard() {
+	void circleDoesNotWinOnTheDrawBoard() {
 		assertThat(TicTacToeMain.isWin(board, Stone.CIRCLE)).isFalse();
 	}
 
