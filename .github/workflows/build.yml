@@ -6,22 +6,19 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flashbibi/450-tictactest-mvk:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - uses: actions/checkout@v7
-
-      - name: JDK bereitstellen
-        uses: actions/setup-java@v6
-        with:
-          distribution: zulu
-          java-version: 25
-
-      - name: Gradle einrichten
-        uses: gradle/actions/setup-gradle@v6
 
       - name: Kompilieren, ohne Tests
         run: ./gradlew assemble
@@ -29,18 +26,14 @@ jobs:
   test:
     needs: build
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flashbibi/450-tictactest-mvk:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - uses: actions/checkout@v7
-
-      - name: JDK bereitstellen
-        uses: actions/setup-java@v6
-        with:
-          distribution: zulu
-          java-version: 25
-
-      - name: Gradle einrichten
-        uses: gradle/actions/setup-gradle@v6
 
       - name: Tests ausfuehren
         run: ./gradlew test
