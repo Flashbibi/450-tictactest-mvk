@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/flashbibi/450-tictactest-mvk:latest
+      options: --user root
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -28,6 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/flashbibi/450-tictactest-mvk:latest
+      options: --user root
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
