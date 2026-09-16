@@ -39,3 +39,9 @@ jobs:
 
       - name: Tests ausfuehren
         run: ./gradlew test
+
+      - name: Coverage-Report als Artifact speichern
+        uses: actions/upload-artifact@v7
+        with:
+          name: jacoco-report
+          path: build/reports/jacoco/test/
