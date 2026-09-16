@@ -1,8 +1,6 @@
 {
 	"name": "tictactoe-java",
-	"build": {
-		"dockerfile": "Dockerfile"
-	},
+	"image": "ghcr.io/flashbibi/450-tictactest-mvk:v1.0.0",
 	"customizations": {
 		"vscode": {
 			"extensions": [
