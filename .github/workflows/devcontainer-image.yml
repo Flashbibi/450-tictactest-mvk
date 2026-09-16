@@ -2,25 +2,78 @@ name: devcontainer-image
 
 on:
   push:
+    branches: ['**']
+    tags: ['v*']
     paths:
       - '.devcontainer/**'
       - '.github/workflows/devcontainer-image.yml'
 
 permissions:
-  contents: read
+  contents: write
   packages: write
+  pull-requests: write
+
+env:
+  IMAGE: ghcr.io/flashbibi/450-tictactest-mvk
 
 jobs:
-  push-image:
+  # Auf Branches: nur pruefen, dass das Dockerfile baut. Nichts wird gepusht.
+  build:
+    if: github.ref_type == 'branch'
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v7
+
+      - name: Dockerfile bauen, ohne Push
+        run: docker build .devcontainer
+
+  # Auf Tags v*: Freigabe. Baut, pusht Version + latest.
+  release:
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Nur Tags auf main sind Freigaben
+        run: git merge-base --is-ancestor ${{ github.sha }} origin/main
 
       - name: In GHCR einloggen
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Image bauen und pushen
         run: |
-          docker build --provenance=false -t ghcr.io/flashbibi/450-tictactest-mvk:latest .devcontainer
-          docker push ghcr.io/flashbibi/450-tictactest-mvk:latest
+          docker build --provenance=false -t $IMAGE:${{ github.ref_name }} -t $IMAGE:latest .devcontainer
+          docker push $IMAGE:${{ github.ref_name }}
+          docker push $IMAGE:latest
+
+  # Nach der Freigabe: PR, der CI und devcontainer.json auf die neue Version hebt.
+  bump:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          token: ${{ secrets.DEVCONTAINER_PR_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Version in CI und devcontainer.json eintragen
+        run: sed -i "s|$IMAGE:v[0-9.]*|$IMAGE:${{ github.ref_name }}|g" .github/workflows/build.yml .devcontainer/devcontainer.json
+
+      - name: Pull Request erstellen
+        env:
+          GH_TOKEN: ${{ secrets.DEVCONTAINER_PR_TOKEN || secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if git diff --quiet; then
+            echo "main referenziert bereits $TAG, kein PR noetig"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c bump-devcontainer-$TAG
+          git commit -am "Bump devcontainer image to $TAG"
+          git push origin bump-devcontainer-$TAG
+          gh pr create --base main --title "Bump devcontainer image to $TAG" \
+            --body "Automatisch erstellt vom Release-Workflow. Hebt CI und devcontainer.json auf das freigegebene Image \`$IMAGE:$TAG\`."
