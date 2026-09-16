@@ -1,0 +1,26 @@
+name: devcontainer-image
+
+on:
+  push:
+    paths:
+      - '.devcontainer/**'
+      - '.github/workflows/devcontainer-image.yml'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  push-image:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: In GHCR einloggen
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Image bauen und pushen
+        run: |
+          docker build --provenance=false -t ghcr.io/flashbibi/450-tictactest-mvk:latest .devcontainer
+          docker push ghcr.io/flashbibi/450-tictactest-mvk:latest
