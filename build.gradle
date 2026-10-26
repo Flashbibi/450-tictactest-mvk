@@ -5,6 +5,9 @@ plugins {
 	id 'info.solidsoft.pitest' version '1.19.0'
 }
 
+// Version der Anwendung (MAJOR.MINOR.PATCH), siehe RELEASE.md. Der Release-Tag ist "v" + diese Version
+version = '1.0.0'
+
 repositories {
 	mavenCentral()
 }
@@ -63,6 +66,13 @@ pitest {
 
 application {
 	mainClass = 'ch.bbw.m450.tictactoe.TicTacToeMain'
+}
+
+// Ausführbares JAR: Mit der Main-Class im Manifest startet "java -jar tictactest-<Version>.jar" das Spiel
+jar {
+	manifest {
+		attributes 'Main-Class': application.mainClass.get()
+	}
 }
 
 run {

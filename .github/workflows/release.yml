@@ -1,0 +1,55 @@
+name: release
+
+# Ein Release entsteht nur, wenn ein Tag v* gepusht wird, nie bei einem normalen Push auf main. Siehe RELEASE.md
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Release erstellen und JAR hochladen
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Java installieren
+        uses: actions/setup-java@v6
+        with:
+          distribution: zulu
+          java-version: '25'
+
+      - name: Version und CHANGELOG pruefen
+        run: |
+          version=${GITHUB_REF_NAME#v}
+          grep -q "^version = '$version'$" build.gradle || { echo "build.gradle hat nicht die Version $version"; exit 1; }
+          grep -q "^## $version " CHANGELOG.md || { echo "CHANGELOG.md hat keinen Eintrag für $version"; exit 1; }
+
+      - name: Tests ausfuehren
+        run: ./gradlew check
+
+      - name: JAR bauen
+        run: ./gradlew jar
+
+      - name: GitHub Release erstellen und JAR anhaengen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=${GITHUB_REF_NAME#v}
+          {
+            echo "Release: TicTacTest $GITHUB_REF_NAME"
+            echo ""
+            echo "Tag: $GITHUB_REF_NAME"
+            echo ""
+            echo "Commit: $GITHUB_SHA"
+            echo ""
+            echo "Änderungen:"
+            # der Abschnitt dieser Version aus CHANGELOG.md, bis zur nächsten Überschrift "## "
+            awk -v v="$version" '$1 == "##" { inside = ($2 == v); next } inside' CHANGELOG.md
+            echo ""
+            echo "Artefakt: tictactest-$version.jar"
+          } > notes.md
+          gh release create "$GITHUB_REF_NAME" "build/libs/tictactest-$version.jar" \
+            --title "TicTacTest $GITHUB_REF_NAME" --notes-file notes.md
