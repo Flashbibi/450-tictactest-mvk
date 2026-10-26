@@ -1,6 +1,7 @@
 FROM azul/zulu-openjdk-alpine:25
 
 LABEL org.opencontainers.image.source=https://github.com/Flashbibi/450-tictactest-mvk
+LABEL org.opencontainers.image.description="DevContainer for TicTacTest: Alpine, Azul Zulu JDK 25, bash, git"
 
 # Zulu, weil gradle/gradle-daemon-jvm.properties toolchainVendor=AZUL verlangt
 RUN apk add --no-cache bash git
