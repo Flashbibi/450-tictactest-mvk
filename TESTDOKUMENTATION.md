@@ -5,10 +5,18 @@
 `build.gradle`:
 
 ```groovy
+plugins {
+    id 'java'
+    id 'application'
+    id 'jacoco'
+    id 'info.solidsoft.pitest' version '1.19.0'
+}
+
 dependencies {
     testImplementation 'org.assertj:assertj-core:3.27.7'
     testImplementation 'org.junit.jupiter:junit-jupiter:6.1.3'
     testImplementation 'org.junit-pioneer:junit-pioneer:2.3.0'
+    testImplementation 'com.tngtech.archunit:archunit-junit6:1.5.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
@@ -20,7 +28,14 @@ test {
 
 `junit-jupiter` ist das Aggregat-Artefakt und enthält `junit-jupiter-params` bereits – für `@ParameterizedTest` braucht es keine zusätzliche Dependency.
 
-Ausführen: `./gradlew test --rerun-tasks`. Danach liegt der Coverage-Report unter `build/reports/jacoco/test/html/index.html`.
+Ausführen:
+
+```bash
+./gradlew check --rerun-tasks   # Tests, ArchUnit, Coverage-Report und Prüfung auf 90 % Branch Coverage
+./gradlew pitest                # Mutation Testing
+```
+
+Wo die Reports liegen, steht in [`TESTKONZEPT.md`](TESTKONZEPT.md), Abschnitt 8.
 
 ## Test-Code auf GitHub
 
@@ -103,6 +118,14 @@ Der `PerfectPlayer` probiert mit Minimax jede mögliche Fortsetzung der Partie d
 | `drawsAgainstItself` | PerfectPlayer gegen PerfectPlayer | `play`, Ausgabe abgefangen | Unentschieden, Ausgabe „it's a draw!" |
 | `beatsTheGreedyPlayer` | PerfectPlayer gegen GreedyPlayer, einmal als X und einmal als O | `play`, Ausgabe abgefangen | der PerfectPlayer gewinnt beide Partien |
 
+### `ArchitectureTest` (ArchUnit)
+
+ArchUnit ist das zusätzlich gewählte Testing-Framework. Es läuft über die JUnit Platform automatisch mit `./gradlew test`.
+
+| Test | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| `PLAYERS_DO_NOT_KNOW_EACH_OTHER` | der kompilierte Produktionscode, ohne Tests | ArchUnit prüft die Abhängigkeiten aller Klassen im Paket `players` | keine Klasse in `players` verwendet eine andere Klasse aus `players` – ein Spieler spricht nur über `TicTacToePlayer` und `TicTacToeMain` mit dem Spiel |
+
 ## Gefundener Fehler im Originalcode
 
 `HumanPlayer` erstellt bei jedem Zug einen neuen `Scanner` auf `System.in`. Ein Scanner liest mehr als eine Zeile auf einmal in seinen Puffer. Kommen alle Eingaben gleichzeitig an, wie bei `@StdIo({"2", "6"})`, gehen die weiteren Zeilen mit dem ersten Scanner verloren, und der zweite Zug wirft `NoSuchElementException`. An der Tastatur fällt das nicht auf, weil jede Zeile erst nach Enter kommt.
@@ -111,7 +134,7 @@ Der Originalcode soll nicht wesentlich verändert werden. Deshalb ist der Fehler
 
 ## Ergebnis
 
-73 Testfälle, alle grün. JaCoCo: Branch Coverage 100 %, Instruction Coverage 97.6 %. Nicht abgedeckt ist nur `main(...)`, siehe oben.
+74 Testfälle (73 JUnit Jupiter, 1 ArchUnit), alle grün. JaCoCo: Branch Coverage 100 %, Instruction Coverage 97.6 %. Die JaCoCo-Prüfung im Build verlangt mindestens 90 % Branch Coverage. Nicht abgedeckt ist nur `main(...)`, siehe oben.
 
 ## Screenshot
 

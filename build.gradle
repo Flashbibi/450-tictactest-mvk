@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'application'
 	id 'jacoco'
+	id 'info.solidsoft.pitest' version '1.19.0'
 }
 
 repositories {
@@ -12,6 +13,7 @@ dependencies {
 	testImplementation 'org.assertj:assertj-core:3.27.7'
 	testImplementation 'org.junit.jupiter:junit-jupiter:6.1.3'
 	testImplementation 'org.junit-pioneer:junit-pioneer:2.3.0'
+	testImplementation 'com.tngtech.archunit:archunit-junit6:1.5.1'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
@@ -33,6 +35,30 @@ jacocoTestReport {
 		html.required = true
 		xml.required = true
 	}
+}
+
+// Der Build schlägt fehl, wenn die Branch Coverage unter 90 % liegt
+jacocoTestCoverageVerification {
+	dependsOn test
+	violationRules {
+		rule {
+			limit {
+				counter = 'BRANCH'
+				minimum = 0.90
+			}
+		}
+	}
+}
+
+check.dependsOn jacocoTestCoverageVerification
+
+// Mutation Testing: ./gradlew pitest, Report unter build/reports/pitest/index.html
+pitest {
+	pitestVersion = '1.30.1'
+	junit5PluginVersion = '1.2.3'
+	targetClasses = ['ch.bbw.m450.tictactoe.*']
+	excludedTestClasses = ['ch.bbw.m450.tictactoe.ArchitectureTest'] // prüft nur Abhängigkeiten, keine Logik
+	timestampedReports = false
 }
 
 application {
