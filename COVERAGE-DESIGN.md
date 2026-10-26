@@ -109,3 +109,20 @@ Das Coverage Gate braucht den Wert von `main`. Mit diesem Design steht er als le
 **CSV auf `main`** statt auf `gh-pages`. Verworfen, siehe Frage 3: jeder Messwert würde einen CI-Lauf auslösen.
 
 **Metrik Line Coverage.** Verworfen, siehe Frage 2.
+
+## Umsetzung (Auftrag 2.5)
+
+Stand: 26.10.2026. Umgesetzt wie oben beschrieben:
+
+| Datei | Inhalt |
+|---|---|
+| `.github/workflows/build.yml`, Job `coverage-history` | hängt nach jedem grünen Lauf auf `main` eine Zeile an `coverage.csv` auf `gh-pages` an |
+| `scripts/coverage.sh` | das kleine Shell-Skript aus Frage 1, liest einen Prozentwert aus dem JaCoCo-XML |
+| `coverage-page/index.html` | die Seite mit dem Chart.js-Diagramm |
+
+Zwei Ergänzungen gegenüber dem Design:
+
+- **Branch Coverage als zweite Spalte.** `coverage.csv` hat die Spalten `Datum,Commit,Instruction,Branch`, das Diagramm zeigt beide Linien – wie im Beispiel der Lehrperson. Frage 2 hatte diese Erweiterung offen gelassen.
+- **Die Seite liegt auf `main`.** `coverage-page/index.html` wird bei jedem Lauf nach `gh-pages` kopiert. So geht auch eine Änderung an der Seite durch einen Pull Request, und auf `gh-pages` schreibt weiterhin nur der Workflow.
+
+Die x-Achse zeigt Datum und Commit untereinander, weil an einem Tag mehrere Pushes auf `main` vorkommen.

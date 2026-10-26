@@ -3,6 +3,7 @@ name: build
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -45,3 +46,50 @@ jobs:
         with:
           name: jacoco-report
           path: build/reports/jacoco/test/
+
+  # Coverage-Time-Series (Auftrag 2.5), siehe COVERAGE-DESIGN.md
+  coverage-history:
+    if: github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # Läufe nacheinander, damit sich zwei Pushes auf gh-pages nicht in die Quere kommen
+    concurrency: coverage-history
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Coverage-Report aus dem Job test holen
+        uses: actions/download-artifact@v8
+        with:
+          name: jacoco-report
+          path: jacoco
+
+      - name: Messwert an coverage.csv auf gh-pages anhaengen
+        env:
+          REPO_URL: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+        run: |
+          instruction=$(scripts/coverage.sh jacoco/jacocoTestReport.xml INSTRUCTION)
+          branch=$(scripts/coverage.sh jacoco/jacocoTestReport.xml BRANCH)
+          commit=${GITHUB_SHA::7}
+          echo "Commit $commit: Instruction $instruction %, Branch $branch %"
+
+          # gh-pages holen. Beim allerersten Lauf gibt es den Branch noch nicht, dann wird er neu angelegt.
+          git clone --depth 1 --branch gh-pages "$REPO_URL" site || git init -b gh-pages site
+          cd site
+
+          [ -f coverage.csv ] || echo "Datum,Commit,Instruction,Branch" > coverage.csv
+          # Pro Commit nur eine Zeile, auch wenn der Lauf wiederholt wird
+          grep -q ",$commit," coverage.csv || echo "$(date +%F),$commit,$instruction,$branch" >> coverage.csv
+          cp ../coverage-page/index.html .
+
+          git add .
+          if git diff --cached --quiet; then
+            echo "Commit $commit ist schon erfasst"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Coverage $commit: Instruction $instruction %, Branch $branch %"
+          git push "$REPO_URL" HEAD:gh-pages
