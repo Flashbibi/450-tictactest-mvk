@@ -44,7 +44,7 @@ Bewusst **nicht** Teil dieses Konzepts:
 | Assertions | AssertJ 3.27.7, eingebunden über `implements WithAssertions` |
 | StdIn/StdOut | JUnit Pioneer 2.3.0 (`@StdIo`, `StdOut`) |
 | Zusätzliches Framework | ArchUnit 1.5.1 (`archunit-junit6`) |
-| Coverage | JaCoCo 0.8.15 |
+| Coverage | JaCoCo 0.8.16 |
 | Mutation Testing | PITest 1.30.1 mit Gradle-Plugin `info.solidsoft.pitest` 1.19.0 und `pitest-junit5-plugin` 1.2.3 |
 | Build | Gradle 9.8.2 via Wrapper (`./gradlew`) |
 | JDK | Java 25 (lokal Zulu 25, CI im DevContainer mit Zulu 25) |
