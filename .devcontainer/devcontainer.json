@@ -1,6 +1,6 @@
 {
 	"name": "tictactoe-java",
-	"image": "ghcr.io/flashbibi/450-tictactest-mvk:v1.0.0",
+	"image": "ghcr.io/flashbibi/450-tictactest-mvk:v1.0.1",
 	"customizations": {
 		"vscode": {
 			"extensions": [
