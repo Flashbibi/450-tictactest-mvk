@@ -93,7 +93,7 @@ Wo die Reports liegen, steht in [`TESTKONZEPT.md`](TESTKONZEPT.md), Abschnitt 8.
 | Test | GIVEN | WHEN | THEN |
 |---|---|---|---|
 | `playsTheFieldTypedOnTheKeyboard` | Eingabe „4" | `play` | Rückgabe 4 |
-| `showsTheBoardAndAsksForTheNextMove` | Eingabe „7", Board `X.. .O. ...` | `play` | Ausgabe: das Board, darunter „where to to put the next CROSS? (0-8): " |
+| `showsTheBoardAndAsksForTheNextMove` | Eingabe „7", Board `X.. .O. ...` | `play` | Ausgabe: das Board, darunter „where to put the next CROSS? (0-8): " |
 | `crashesOnInputThatIsNotANumber` | Eingabe „vier" | `play` | `NumberFormatException` |
 | `losesTheSecondMoveWhenAllInputArrivesAtOnce` | Eingaben „2" und „6", beide schon da | zwei Züge nacheinander | der erste Zug liefert 2, der zweite wirft `NoSuchElementException` – ein Fehler im Originalcode, siehe unten |
 

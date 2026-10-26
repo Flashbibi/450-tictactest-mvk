@@ -34,7 +34,7 @@ class HumanPlayerTest implements WithAssertions {
 
 		var shown = out.capturedString().replaceAll("\033\\[\\d+m", ""); // ohne ANSI-Farbcodes
 		assertThat(shown.lines())
-				.containsExactly("X  1  2  ", "3  O  5  ", "6  7  8  ", "where to to put the next CROSS? (0-8): ");
+				.containsExactly("X  1  2  ", "3  O  5  ", "6  7  8  ", "where to put the next CROSS? (0-8): ");
 	}
 
 	@Test
