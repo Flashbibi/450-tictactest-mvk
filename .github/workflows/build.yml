@@ -38,14 +38,31 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Tests ausfuehren
-        run: ./gradlew test
+      # check = Tests + JaCoCo-Prüfung (mindestens 90 % Branch Coverage), pitest = Mutation Testing
+      - name: Tests, Coverage-Pruefung und Mutation Testing
+        run: ./gradlew check pitest
+
+      # Die Reports auch speichern, wenn ein Schritt davor fehlschlägt
+      - name: Test-Report als Artifact speichern
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-report
+          path: build/reports/tests/test/
 
       - name: Coverage-Report als Artifact speichern
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: jacoco-report
           path: build/reports/jacoco/test/
+
+      - name: PITest-Report als Artifact speichern
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pitest-report
+          path: build/reports/pitest/
 
   # Coverage-Time-Series (Auftrag 2.5), siehe COVERAGE-DESIGN.md
   coverage-history:
