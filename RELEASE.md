@@ -94,3 +94,6 @@ Ein Release gilt erst als erfolgreich, wenn das veröffentlichte JAR getestet is
 
 | Version | Datum | Getestet von | JAR heruntergeladen | Gestartet und eine Partie gespielt |
 |---|---|---|---|---|
+| 1.0.0 | 26.10.2026 | Linus | ja | ja |
+| 1.0.1 | 26.10.2026 | Linus | ja | ja |
+| 1.0.2 | 26.10.2026 | Linus | ja | ja |
