@@ -13,78 +13,70 @@ dependencies {
 
 test {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport
 }
 ```
 
 `junit-jupiter` ist das Aggregat-Artefakt und enthält `junit-jupiter-params` bereits – für `@ParameterizedTest` braucht es keine zusätzliche Dependency.
 
-Ausführen: `./gradlew test --rerun-tasks`
+Ausführen: `./gradlew test --rerun-tasks`. Danach liegt der Coverage-Report unter `build/reports/jacoco/test/html/index.html`.
 
 ## Test-Code auf GitHub
 
-<https://github.com/Flashbibi/450-tictactest-mvk/blob/main/src/test/java/ch/bbw/m450/tictactoe/TicTacToeTest.java>
+<https://github.com/Flashbibi/450-tictactest-mvk/tree/main/src/test/java/ch/bbw/m450/tictactoe>
 
-## Helper und Fixture
+## Hilfsstrukturen
 
-- **Helper** `boardOf(sketch)` – baut ein `Stone[]` aus einer lesbaren Skizze wie `"XXX ... ..."` (`X` = Kreuz, `O` = Kreis, `.` = leer). Wird sowohl von der Fixture als auch von den parametrisierten Tests genutzt.
-- **Fixture** `@BeforeEach setUp()` – baut vor jedem Test ein frisches Board aus der Konstanten `DRAW_BOARD` (`"XXO OOX XOX"`, volles Brett ohne Sieger). Zwei Tests teilen sich diese Fixture, jeder bekommt aber seine eigene Instanz.
+| Baustein | Wo | Wofür |
+|---|---|---|
+| `boardOf(sketch)` | `Boards.java` | baut ein `Stone[]` aus einer lesbaren Skizze wie `"XXX ... ..."` (`X` = Kreuz, `O` = Kreis, `.` = leer) |
+| `assertThatBoard(...)` | `BoardAssert.java` | eigene AssertJ-Assertion: `assertThatBoard("XXX ... ...").isWonBy(CROSS)` statt `assertThat(isWin(...)).isTrue()` |
+| Fixture `setUp()` | `TicTacToeTest` | baut vor jedem Test ein frisches Board aus `DRAW_BOARD` (`"XXO OOX XOX"`, volles Brett ohne Sieger) |
+| `playing(0, 1, 2)` | `TicTacToeTest` | Test-Double für einen Spieler: spielt die angegebenen Felder der Reihe nach. Ein Lambda, kein Mocking-Framework |
 
 ## Tests (GIVEN_WHEN_THEN)
 
-**1. `dummyJunit`** – Dummy-Test für JUnit
-- **GIVEN** der Wert `false`
-- **WHEN** JUnit ihn mit `assertFalse(false)` prüft
-- **THEN** läuft der Test durch – JUnit ist eingebunden
+### `TicTacToeTest` – Siegerkennung `isWin`
 
-**2. `dummyAssertJ`** – Dummy-Test für AssertJ
-- **GIVEN** der Text `"TicTacToe"`
-- **WHEN** AssertJ ihn mit `assertThat(text).isNotBlank()` prüft
-- **THEN** läuft der Test durch – AssertJ ist eingebunden
+| Test | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| `nobodyWinsTheDrawBoard` (2 Fälle) | das Fixture-Board `XXO / OOX / XOX` | `isWin` für `CROSS` und für `CIRCLE` | niemand gewinnt |
+| `detectsWinningLine` (8 Fälle) | je eine der 8 Gewinnlinien (3 Zeilen, 3 Spalten, 2 Diagonalen), abwechselnd mit `CROSS` und `CIRCLE` | `isWin` für die Farbe der Linie und für den Gegner | die Farbe der Linie gewinnt, der Gegner nicht |
+| `detectsNoWinningLine` (3 Fälle) | ein leeres Board, ein Board mit nur zwei in einer Reihe, ein Board mit `XXX` oben, abgefragt für `CIRCLE` | `isWin` | kein Sieg – die Erkennung ist farbabhängig und braucht drei in einer Linie |
+| `twoInALineIsNoWin` (24 Fälle) | jede der 8 Linien mit nur zwei Steinen, jeder der drei Steine fehlt einmal | `isWin` für beide Farben | kein Sieg. So wird jede Teilbedingung in `isWin` einmal falsch |
 
-**3. `crossDoesNotWinOnTheDrawBoard`** – nutzt die Fixture
-- **GIVEN** das Fixture-Board `XXO / OOX / XOX`
-- **WHEN** `TicTacToeMain.isWin(board, CROSS)` aufgerufen wird
-- **THEN** ist das Ergebnis `false`
+### `TicTacToeTest` – Ausgabe `toString`
 
-**4. `circleDoesNotWinOnTheDrawBoard`** – nutzt dieselbe Fixture
-- **GIVEN** dasselbe Fixture-Board
-- **WHEN** `TicTacToeMain.isWin(board, CIRCLE)` aufgerufen wird
-- **THEN** ist das Ergebnis `false`
+| Test | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| `showsStonesAndTheNumbersOfFreeFields` | Board `XO. ..X O..` | `toString` | drei Zeilen, Steine als `X`/`O`, freie Felder als ihre Nummer |
+| `printsStonesBoldAndFreeFieldsGray` | Board `XO. ... ...` | `toString` | Steine stehen fett (`\033[1m`), freie Felder grau (`\033[37m`) |
 
-**5. `detectsWinningLine`** – parametrisiert, 8 Fälle via `@CsvSource`
-- **GIVEN** je eine der 8 möglichen Gewinnlinien als Skizze (3 Zeilen, 3 Spalten, 2 Diagonalen), abwechselnd mit `CROSS` und `CIRCLE` besetzt
-- **WHEN** `TicTacToeMain.isWin(boardOf(sketch), color)` für jeden Fall aufgerufen wird
-- **THEN** ist das Ergebnis jedes Mal `true`
+### `TicTacToeTest` – Spielschleife `play`
 
-**6. `detectsNoWinningLine`** – parametrisiert, 3 Fälle via `@CsvSource`
-- **GIVEN** ein leeres Board, ein Board mit nur zwei in einer Reihe, und ein Board mit `XXX` oben, aber abgefragt für `CIRCLE`
-- **WHEN** `TicTacToeMain.isWin(boardOf(sketch), color)` für jeden Fall aufgerufen wird
-- **THEN** ist das Ergebnis jedes Mal `false` – die Siegerkennung ist farbabhängig und braucht drei in einer Linie
+| Test | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| `crossWinsWithTheTopRow` | X spielt 0, 1, 2 – O spielt 3, 4 | `play` | `CROSS` gewinnt |
+| `circleWinsWithTheMiddleRow` | X spielt 0, 1, 8 – O spielt 3, 4, 5 | `play` | `CIRCLE` gewinnt |
+| `fullBoardWithoutLineIsADraw` | Züge, die das `DRAW_BOARD` ergeben | `play` | Unentschieden, Rückgabe `null` |
+| `rejectsMovesOutsideTheBoard` (2 Fälle) | X spielt auf Feld -1 bzw. 9 | `play` | `IllegalStateException` „cannot play to position …" |
+| `rejectsMovesOnATakenField` | X und O spielen beide auf Feld 0 | `play` | `IllegalStateException` „cannot play to position 0" |
+| `aPlayerCannotPlayAgainstItself` | derselbe Spieler als X und O | `play` | `IllegalArgumentException` „players must differ" |
 
-Zusätzlich steht `thisTestFails` auskommentiert im File. Er stammt aus dem vorherigen Auftrag (Screenshot eines Fehlschlags) und ist bewusst deaktiviert, damit die Suite grün bleibt.
+### `TicTacToePlayerTest` und `GreedyPlayerTest`
+
+| Test | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| `opponentIsTheOtherColor` (2 Fälle) | `CROSS` bzw. `CIRCLE` | `opponent()` | die andere Farbe |
+| `playsTheFirstFreeField` (4 Fälle) | Boards, auf denen das erste freie Feld 0, 2, 6 bzw. 8 ist | `GreedyPlayer.play` | genau dieses Feld |
+| `givesUpOnAFullBoard` | ein volles Board | `GreedyPlayer.play` | `IllegalStateException` „cannot play at all" |
 
 ## Ergebnis
 
-15 Tests, alle grün – 4 einfache plus 11 aus den beiden parametrisierten Tests.
-
-```
-TicTacToeTest > dummyJunit() PASSED
-TicTacToeTest > dummyAssertJ() PASSED
-TicTacToeTest > crossDoesNotWinOnTheDrawBoard() PASSED
-TicTacToeTest > circleDoesNotWinOnTheDrawBoard() PASSED
-TicTacToeTest > detectsWinningLine(String, Stone) > "XXX ... ..." gewonnen von "CROSS" PASSED
-TicTacToeTest > detectsWinningLine(String, Stone) > "... OOO ..." gewonnen von "CIRCLE" PASSED
-TicTacToeTest > detectsWinningLine(String, Stone) > "... ... XXX" gewonnen von "CROSS" PASSED
-TicTacToeTest > detectsWinningLine(String, Stone) > "O.. O.. O.." gewonnen von "CIRCLE" PASSED
-TicTacToeTest > detectsWinningLine(String, Stone) > ".X. .X. .X." gewonnen von "CROSS" PASSED
-TicTacToeTest > detectsWinningLine(String, Stone) > "..O ..O ..O" gewonnen von "CIRCLE" PASSED
-TicTacToeTest > detectsWinningLine(String, Stone) > "X.. .X. ..X" gewonnen von "CROSS" PASSED
-TicTacToeTest > detectsWinningLine(String, Stone) > "..O .O. O.." gewonnen von "CIRCLE" PASSED
-TicTacToeTest > detectsNoWinningLine(String, Stone) > "... ... ..." nicht gewonnen von "CROSS" PASSED
-TicTacToeTest > detectsNoWinningLine(String, Stone) > "XX. OO. ..." nicht gewonnen von "CROSS" PASSED
-TicTacToeTest > detectsNoWinningLine(String, Stone) > "XXX ... ..." nicht gewonnen von "CIRCLE" PASSED
-
-BUILD SUCCESSFUL
-```
+53 Testfälle, alle grün. JaCoCo: Branch Coverage 100 %, Instruction Coverage 91.5 %. Nicht abgedeckt sind `main(...)` und `HumanPlayer`, weil sie von der Tastatur lesen.
 
 ## Screenshot
+
+Fehlschlag des Tests `thisTestFails` aus dem vorherigen Auftrag. Der Test ist inzwischen entfernt.
+
+![Testlauf mit einem fehlschlagenden Test](image.png)
