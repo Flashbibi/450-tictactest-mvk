@@ -11,10 +11,12 @@ import ch.bbw.m450.tictactoe.TicTacToePlayer;
  */
 public class HumanPlayer implements TicTacToePlayer {
 
+	// one scanner for all moves: a new scanner per move loses the input the previous one has already buffered
+	private final Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8);
+
 	@Override
 	public int play(Stone[] board, Stone colorToPlay) {
 		System.out.println(TicTacToeMain.toString(board) + "where to put the next " + colorToPlay + "? (0-8): ");
-		var scanner = new Scanner(System.in, StandardCharsets.UTF_8);
 		return Integer.parseInt(scanner.nextLine());
 	}
 }
