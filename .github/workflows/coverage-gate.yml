@@ -1,0 +1,66 @@
+name: coverage-gate
+
+# Auftrag 3: Ein Branch darf keine tiefere Test Coverage haben als main, siehe COVERAGE-GATE.md
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # für den Kommentar im Pull Request
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Die Coverage von main steht in der letzten Zeile der Time-Series auf gh-pages
+      - name: gh-pages auschecken
+        uses: actions/checkout@v7
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: zulu
+          java-version: '25'
+
+      - name: Tests mit Coverage
+        run: ./gradlew test
+
+      - name: Coverage mit main vergleichen
+        run: |
+          main=$(tail -n 1 gh-pages/coverage.csv | cut -d, -f3)
+          branch=$(scripts/coverage.sh build/reports/jacoco/test/jacocoTestReport.xml INSTRUCTION)
+          diff=$(awk -v b="$branch" -v m="$main" 'BEGIN { printf "%+.1f", b - m }')
+          if awk -v b="$branch" -v m="$main" 'BEGIN { exit !(b >= m) }'; then
+            result="PASS - Coverage Gate bestanden"
+          else
+            result="FAIL - Coverage Gate nicht bestanden"
+          fi
+
+          {
+            echo '```'
+            echo "Test Coverage (Instruction)"
+            echo ""
+            echo "main:        $main %"
+            echo "Branch:      $branch %"
+            echo "Änderung:    $diff Prozentpunkte"
+            echo ""
+            echo "$result"
+            echo '```'
+          } > result.md
+          cat result.md
+          cat result.md >> "$GITHUB_STEP_SUMMARY"
+
+      # Bonus: ein Kommentar pro Pull Request, bei weiteren Pushes wird er aktualisiert
+      - name: Ergebnis als Kommentar in den Pull Request schreiben
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment ${{ github.event.pull_request.number }} --edit-last --create-if-none --body-file result.md
+
+      - name: Bei FAIL abbrechen
+        run: grep -q PASS result.md
