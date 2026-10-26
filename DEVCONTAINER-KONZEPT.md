@@ -1,131 +1,80 @@
 # Konzept: Versionierung und Continuous Deployment des DevContainers
 
-Auftrag 3 · Stand: 16.09.2026 · Repository: <https://github.com/Flashbibi/450-tictactest-mvk>
+Auftrag 3 · Stand: 26.10.2026 · Repository: <https://github.com/Flashbibi/450-tictactest-mvk>
 
-Dieses Dokument hält die Entwurfsentscheidungen fest. Die operative Beschreibung – wie eine Freigabe konkret abläuft – steht in [`DEVCONTAINER.md`](DEVCONTAINER.md).
+Dieses Dokument hält die Entscheidungen fest. Wie eine neue Version konkret entsteht, steht in [`DEVCONTAINER.md`](DEVCONTAINER.md).
 
 ## Ausgangslage
 
-Nach Auftrag 1 und 2 existiert ein Alpine-Image mit Java 25 in der GitHub Container Registry, und die CI läuft darin. Der Stand hat aber zwei Schwächen:
+Nach Auftrag 1 und 2 existiert ein Alpine-Image mit Java 25 in der GitHub Container Registry (GHCR), und die CI läuft darin. Der Stand hatte zwei Schwächen:
 
-- `devcontainer-image.yml` pusht bei **jeder** Änderung an `.devcontainer/` von **jedem** Branch auf `:latest`
-- `build.yml` zieht `:latest`
+- `devcontainer-image.yml` pushte bei **jeder** Änderung an `.devcontainer/` von **jedem** Branch auf `:latest`
+- `build.yml` zog `:latest`
 
-Ein fehlerhaftes Dockerfile auf einem Feature-Branch überschreibt damit sofort das Image, mit dem `main` gebaut wird. Es gibt keinen Unterschied zwischen „gebaut" und „freigegeben".
+Ein fehlerhaftes Dockerfile auf einem Feature-Branch hätte damit sofort das Image überschrieben, mit dem `main` gebaut wird. Es gab keinen Unterschied zwischen „gebaut" und „freigegeben".
 
-## Anforderungen aus dem Auftrag
+## Anforderungen
 
-| # | Anforderung | Kurzform |
-|---|---|---|
-| A1 | Image nach automatischem Build und Push automatisch in CI **und** lokal verwenden | Auto-Adoption |
-| A2 | Sinnvoll versionieren, z.B. `v1.0.0`, `v1.0.1` | Versionierung |
-| A3 | Verhindern, dass nicht freigegebene Container verwendet werden | Freigabe-Sperre |
-| A4 | Bei erfolgreichem Push automatisch einen PR erstellen, der die neue Version nutzt | Bump-PR |
-| A5 | Alle CI-Jobs nutzen automatisch die neueste Version | CI-Adoption |
-| A6 | Lokale Umgebungen nutzen automatisch die neueste Version | Lokale Adoption |
-| A7 | Gesamten Prozess in Markdown dokumentieren | Doku |
-
-## Das Spannungsfeld
-
-A1, A5 und A6 verlangen *„automatisch die neueste Version"*. A3 verlangt *„nur freigegebene Versionen"*. Beides gleichzeitig geht nur, wenn klar definiert ist, was „neueste" heisst: **die neueste freigegebene Version, nicht der neueste Build.**
-
-A4 liefert den Mechanismus dafür: die Automatik eröffnet einen PR, ein Mensch merged ihn. Der Merge ist die Adoption. Damit ist „automatisch" erfüllt – die Umstellung passiert ohne Handarbeit am Code – und „freigegeben" auch, weil nichts ohne Review in Betrieb geht.
-
-## Leitfragen und Entscheidungen
-
-### 1. Wie wird versioniert?
-
-**SemVer als Git-Tags `vMAJOR.MINOR.PATCH`.**
-
-| Stelle | Erhöhen wenn |
+| # | Anforderung |
 |---|---|
-| MAJOR | Base-Image oder Java-Version wechselt – bestehende Umgebungen können brechen |
-| MINOR | Tools oder Extensions kommen dazu, Bisheriges läuft weiter |
-| PATCH | Korrektur ohne neue Funktion |
+| A1 | Bei Push auf `main` wird der Container in die GHCR gepusht |
+| A2 | Sinnvoll versionieren, z.B. `v1.0.0`, `v1.0.1` |
+| A3 | Nicht freigegebene Container dürfen nicht verwendet werden |
+| A4 | Nach dem Push automatisch einen PR erstellen, der `devcontainer.json` und alle CI-Workflows auf die neue Version setzt |
+| A5 | CI und lokale Umgebungen nutzen die neueste Version |
+| A6 | Den Prozess in Markdown dokumentieren |
 
-Git-Tags statt einer Versionsdatei im Repository, weil ein Tag unveränderlich an einen Commit gebunden ist. Man sieht jederzeit, welcher Dockerfile-Stand zu welcher Image-Version gehört.
+## Entscheidungen
 
-### 2. Was ist eine Freigabe?
+### 1. Versionierung: `v1.0.<Laufnummer>`
 
-**Ein Tag `v*` auf einem Commit, der auf `main` liegt.**
+GitHub nummeriert die Läufe eines Workflows: 1, 2, 3, … Der Workflow `devcontainer-release` nimmt diese Nummer als letzte Stelle der Version. Jedes neue Image bekommt so automatisch die nächste Nummer: `v1.0.1`, `v1.0.2`, … Niemand muss an eine Versionsnummer denken, und eine Nummer kommt nie zweimal vor.
 
-Der Tag ist die Freigabe – nicht der Merge, nicht der Build. Ein Merge nach `main` ändert das Dockerfile, erzeugt aber kein Image. Erst der Tag löst den Build aus. So kann man mehrere Änderungen auf `main` sammeln und gemeinsam freigeben.
+`v1.0.0` ist das Image aus Auftrag 2, von Hand gepusht.
 
-### 3. Wie wird verhindert, dass nicht freigegebene Images verwendet werden?
+Bewusst **keine** Git-Tags für den DevContainer: Die Tags `v1.0.0`, `v1.0.1` braucht der Release-Prozess der Anwendung. Zwei Tag-Reihen im selben Repository würden kollidieren.
 
-Drei Sperren, die unabhängig voneinander wirken:
+### 2. Wann wird gebaut?
 
-| Sperre | Verhindert |
+Bei einem Push auf `main`, der `.devcontainer/Dockerfile` ändert. Branches bauen nie ein Image. So wird nur gebaut, was reviewed und gemerged ist. Zusätzlich lässt sich der Workflow von Hand starten (`workflow_dispatch`), etwa nach einem Update des Base-Images.
+
+### 3. Was ist eine Freigabe?
+
+**Der Merge des automatisch erstellten Pull Requests.** Nach dem Push setzt der Workflow die neue Version per `sed` in `.devcontainer/devcontainer.json` und in allen Dateien unter `.github/workflows/` ein und eröffnet einen PR. Die CI dieses PRs läuft schon im neuen Image – wird sie grün, ist bewiesen, dass es funktioniert. Erst mit dem Merge nutzen alle CI-Jobs und alle lokalen Umgebungen die neue Version.
+
+### 4. Wie werden nicht freigegebene Images verhindert?
+
+| Sperre | Wirkung |
 |---|---|
-| Branch-Pushes bauen das Dockerfile nur, pushen aber nichts | Ein nicht freigegebener Build erreicht das Registry gar nicht |
-| Der Release-Job prüft `git merge-base --is-ancestor <Tag> main` | Ein Tag auf einem Feature-Branch bricht ab – nur `main` gibt frei |
-| CI und `devcontainer.json` verweisen auf eine feste Version, nie auf `latest` | Selbst ein von Hand gepushtes Image wird nirgends benutzt, bis ein PR den Pin ändert |
+| Nur `main` pusht ins Registry | Was nicht gemerged ist, wird nie veröffentlicht |
+| Alles verweist auf eine feste Version, nie auf `latest` | Ein neues Image ist erst in Betrieb, wenn der PR den Verweis ändert |
+| Der Verweis ändert sich nur über den PR | Jede Umstellung geht durch ein Review |
 
-Die dritte Sperre ist die entscheidende. Sie macht das Registry zu einem passiven Ablageort: was dort liegt, ist erst dann in Betrieb, wenn das Repository darauf zeigt.
+`latest` wird nicht mehr gepusht. Der alte `latest`-Tag aus Auftrag 2 liegt noch im Registry, nichts verweist darauf.
 
-### 4. Wie kommt eine neue Version in die CI?
+### 5. Wie kommt die neue Version lokal an?
 
-**Über den Bump-PR.** Nach dem Push des Images ersetzt der Workflow die Versionsnummer in `build.yml` per `sed` und eröffnet einen PR. Die CI dieses PRs läuft bereits im neuen Image – der grüne Haken beweist, dass es funktioniert. Der Merge stellt alle Jobs um.
+`devcontainer.json` verweist direkt auf das Image (`"image": "ghcr.io/…:v1.0.1"`). Ändert der PR die Version, bietet VS Code beim nächsten Öffnen *Rebuild Container* an und holt das neue Image. Mit `latest` würde VS Code das lokal gespeicherte Image einfach weiterverwenden.
 
-Kein Auto-Merge: der PR ist bewusst der Punkt, an dem ein Mensch hinschaut.
-
-### 5. Wie kommt eine neue Version lokal an?
-
-**Derselbe Bump-PR ändert auch `devcontainer.json`.** Die Datei referenziert das Image direkt (`"image": "ghcr.io/…:v1.0.0"`) statt lokal aus dem Dockerfile zu bauen. Ändert sich der Pin, erkennt VS Code beim nächsten Öffnen die geänderte Konfiguration und bietet *Rebuild Container* an.
-
-Das ist automatischer als `latest`: bei `latest` würde VS Code das lokal gecachte Image weiterverwenden und nie von selbst neu pullen. Ein geänderter Tag hingegen erzwingt den Pull.
-
-### 6. Was löst was aus?
-
-| Ereignis | Job | Ergebnis |
-|---|---|---|
-| Push auf Branch, `.devcontainer/` geändert | `build` | `docker build`, kein Push |
-| Push eines Tags `v*` | `release` | Prüfung, Build, Push `vX.Y.Z` + `latest` |
-| `release` erfolgreich | `bump` | PR mit neuen Pins |
-| Bump-PR gemerged | `build.yml` | CI läuft im neuen Image |
-| Repository lokal geöffnet | VS Code | Rebuild-Hinweis, Pull des neuen Images |
-
-### 7. Welche Rolle hat `latest`?
-
-**Alias auf die neueste Freigabe, ohne Konsumenten.** Das Tag wird bei jeder Freigabe mitgesetzt, damit ein `docker pull` ohne Versionsangabe etwas Sinnvolles liefert. Nichts im Repository verweist darauf.
-
-## Architektur
+## Ablauf
 
 ```mermaid
-flowchart TB
-    subgraph Entwicklung
-        A[Dockerfile ändern<br>Feature-Branch] --> B[Job build<br>nur docker build]
-        B --> C[PR nach main]
-    end
-    subgraph Freigabe
-        C --> D[git tag vX.Y.Z<br>auf main]
-        D --> E[Job release<br>Tag auf main?]
-        E --> F[(GHCR<br>vX.Y.Z + latest)]
-    end
-    subgraph Adoption
-        F --> G[Job bump<br>sed auf beide Pins]
-        G --> H[PR Bump devcontainer<br>image to vX.Y.Z]
-        H --> I[CI im neuen Image]
-        I --> J[Merge]
-        J --> K[build.yml nutzt vX.Y.Z]
-        J --> L[devcontainer.json nutzt vX.Y.Z<br>VS Code: Rebuild]
-    end
+flowchart LR
+    A[Dockerfile ändern<br>PR nach main] --> B[Merge]
+    B --> C[Workflow baut Image<br>v1.0.Laufnummer]
+    C --> D[(GHCR)]
+    D --> E[PR: DevContainer<br>v1.0.x verwenden]
+    E --> F[CI läuft im<br>neuen Image]
+    F --> G[Merge = Freigabe]
 ```
 
 ## Betrachtete Alternativen
 
-**`latest` überall, nur Freigaben pushen `latest`.** Erfüllt A3, aber nicht A4 – es gäbe nichts, was ein PR ändern könnte. Und lokal bleibt das Problem aus Frage 5: VS Code pullt `latest` nicht von selbst.
+**Git-Tags als Freigabe** (erster Entwurf): Der Teams-Auftrag verlangt einen Push auf `main` als Auslöser, und die Tags gehören dem Release-Prozess der Anwendung.
 
-**Auto-Merge des Bump-PRs.** Wäre „noch automatischer", nimmt aber den einzigen Punkt weg, an dem jemand das neue Image im Betrieb sieht, bevor es überall gilt. Der Auftrag verlangt einen PR, keinen Merge.
+**`latest` überall:** Dann gäbe es nichts, was ein PR ändern könnte, und lokal würde nie automatisch ein neues Image geholt.
 
-**Renovate oder Dependabot** für die Pins. Können Image-Tags in Dockerfiles aktualisieren, aber nicht zuverlässig `container: image:` in Workflows und `devcontainer.json` gleichzeitig. Ein eigener `sed`-Schritt ist kürzer und vollständig nachvollziehbar.
+## Einschränkungen
 
-**Branch-Builds mit `sha-<commit>` ins Registry pushen.** Erlaubt, ein Image vor der Freigabe in der CI zu testen. Verworfen, weil damit nicht freigegebene Images im Registry liegen – der Auftrag will genau das vermeiden. Der Preis: ein kaputtes Image fällt erst beim Bump-PR auf und wird mit einem Patch-Release korrigiert.
-
-## Bekannte Einschränkungen
-
-**PRs aus `GITHUB_TOKEN` lösen keine Workflows aus.** GitHub verhindert so Endlosschleifen. Der Bump-PR hätte damit keine CI. Lösung: ein Fine-grained PAT als Secret `DEVCONTAINER_PR_TOKEN`; der Workflow fällt ohne Secret auf `GITHUB_TOKEN` zurück, dann muss die CI von Hand angestossen werden.
-
-**Das Package ist privat.** Wer `devcontainer.json` lokal nutzt, braucht einmalig `docker login ghcr.io` mit `read:packages`. Alternativ das Package auf public stellen.
-
-**Die erste Version muss von Hand entstehen.** `v1.0.0` wird manuell gebaut und gepusht, weil der PR, der die Pins einführt, das Image bereits zum Ziehen braucht. Ab `v1.0.1` läuft alles über den Workflow.
+- **Eigenes Token nötig:** `GITHUB_TOKEN` darf keine Dateien unter `.github/workflows/` ändern, und PRs, die damit erstellt werden, starten keine CI. Der Workflow braucht deshalb das Secret `DEVCONTAINER_PR_TOKEN` (siehe [`DEVCONTAINER.md`](DEVCONTAINER.md)).
+- **Lücken in der Nummerierung:** Auch fehlgeschlagene Läufe zählen. Nach `v1.0.2` kann deshalb `v1.0.4` kommen.
