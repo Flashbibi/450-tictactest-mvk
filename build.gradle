@@ -21,12 +21,31 @@ dependencies {
 }
 
 test {
-	useJUnitPlatform()
+	useJUnitPlatform {
+		excludeTags 'e2e' // die End-to-End-Tests laufen im eigenen Task e2eTest
+	}
 	testLogging {
 		events 'passed', 'failed'
 	}
 	finalizedBy jacocoTestReport
 }
+
+// End-to-End-Tests: ganze Spiele über main(...), ./gradlew e2eTest, Report unter build/reports/tests/e2eTest
+tasks.register('e2eTest', Test) {
+	description = 'Runs the end-to-end tests: complete games with keyboard input and console output.'
+	group = 'verification'
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	useJUnitPlatform {
+		includeTags 'e2e'
+	}
+	testLogging {
+		events 'passed', 'failed'
+	}
+	shouldRunAfter test
+}
+
+check.dependsOn e2eTest
 
 jacoco {
 	toolVersion = '0.8.16'
@@ -61,6 +80,7 @@ pitest {
 	junit5PluginVersion = '1.2.3'
 	targetClasses = ['ch.bbw.m450.tictactoe.*']
 	excludedTestClasses = ['ch.bbw.m450.tictactoe.ArchitectureTest'] // prüft nur Abhängigkeiten, keine Logik
+	excludedGroups = ['e2e'] // Mutation Testing nur mit den Unit-Tests
 	timestampedReports = false
 }
 

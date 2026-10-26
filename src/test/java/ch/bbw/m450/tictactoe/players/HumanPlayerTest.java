@@ -2,8 +2,6 @@ package ch.bbw.m450.tictactoe.players;
 
 import static ch.bbw.m450.tictactoe.Boards.boardOf;
 
-import java.util.NoSuchElementException;
-
 import org.assertj.core.api.WithAssertions;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.StdIo;
@@ -13,15 +11,16 @@ import ch.bbw.m450.tictactoe.TicTacToePlayer.Stone;
 
 /**
  * StdIn/StdOut-Tests mit JUnit Pioneer: {@code @StdIo("4")} ersetzt die Tastatur durch die Eingabe "4",
- * ein Parameter vom Typ {@link StdOut} fängt die Konsolenausgabe ab.
+ * ein Parameter vom Typ {@link StdOut} fängt die Konsolenausgabe ab. Der Spieler wird erst im Test erzeugt, damit er
+ * schon die ersetzte Tastatur liest.
  */
 class HumanPlayerTest implements WithAssertions {
-
-	private final HumanPlayer human = new HumanPlayer();
 
 	@Test
 	@StdIo("4")
 	void playsTheFieldTypedOnTheKeyboard() {
+		var human = new HumanPlayer();
+
 		var move = human.play(boardOf("... ... ..."), Stone.CROSS);
 
 		assertThat(move).isEqualTo(4);
@@ -30,6 +29,8 @@ class HumanPlayerTest implements WithAssertions {
 	@Test
 	@StdIo("7")
 	void showsTheBoardAndAsksForTheNextMove(StdOut out) {
+		var human = new HumanPlayer();
+
 		human.play(boardOf("X.. .O. ..."), Stone.CROSS);
 
 		var shown = out.capturedString().replaceAll("\033\\[\\d+m", ""); // ohne ANSI-Farbcodes
@@ -40,6 +41,7 @@ class HumanPlayerTest implements WithAssertions {
 	@Test
 	@StdIo("vier")
 	void crashesOnInputThatIsNotANumber() {
+		var human = new HumanPlayer();
 		var board = boardOf("... ... ...");
 
 		assertThatThrownBy(() -> human.play(board, Stone.CROSS))
@@ -48,19 +50,18 @@ class HumanPlayerTest implements WithAssertions {
 	}
 
 	/**
-	 * Hält einen Fehler im Originalcode fest: HumanPlayer erstellt bei jedem Zug einen neuen Scanner. Der erste
-	 * Scanner liest mehr als eine Zeile in seinen Puffer, deshalb findet der zweite keine Eingabe mehr. An der
-	 * Tastatur fällt das nicht auf, weil jede Zeile einzeln kommt. Der Originalcode soll nicht verändert werden,
-	 * deshalb ist der Fehler nur dokumentiert, nicht behoben.
+	 * Regressionstest für den Scanner-Fehler: Kommen mehrere Eingaben auf einmal, ging früher ab dem zweiten Zug die
+	 * Eingabe verloren, weil HumanPlayer bei jedem Zug einen neuen Scanner erstellt hat.
 	 */
 	@Test
 	@StdIo({ "2", "6" })
-	void losesTheSecondMoveWhenAllInputArrivesAtOnce() {
+	void readsOneLinePerMove() {
+		var human = new HumanPlayer();
+
 		var first = human.play(boardOf("... ... ..."), Stone.CIRCLE);
-		var board = boardOf("..O ... ...");
+		var second = human.play(boardOf("..O ... ..."), Stone.CIRCLE);
 
 		assertThat(first).isEqualTo(2);
-		assertThatThrownBy(() -> human.play(board, Stone.CIRCLE))
-				.isInstanceOf(NoSuchElementException.class);
+		assertThat(second).isEqualTo(6);
 	}
 }

@@ -38,7 +38,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # check = Tests + JaCoCo-Prüfung (mindestens 90 % Branch Coverage), pitest = Mutation Testing
+      # check = Unit-Tests, End-to-End-Tests (Task e2eTest) und JaCoCo-Prüfung (mindestens 90 % Branch Coverage),
+      # pitest = Mutation Testing
       - name: Tests, Coverage-Pruefung und Mutation Testing
         run: ./gradlew check pitest
 
@@ -49,6 +50,13 @@ jobs:
         with:
           name: test-report
           path: build/reports/tests/test/
+
+      - name: E2E-Test-Report als Artifact speichern
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-test-report
+          path: build/reports/tests/e2eTest/
 
       - name: Coverage-Report als Artifact speichern
         if: always()
