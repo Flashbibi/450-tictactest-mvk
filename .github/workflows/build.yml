@@ -12,7 +12,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/flashbibi/450-tictactest-mvk:latest
+      image: ghcr.io/flashbibi/450-tictactest-mvk:v1.0.0
       options: --user root
       credentials:
         username: ${{ github.actor }}
@@ -28,7 +28,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/flashbibi/450-tictactest-mvk:latest
+      image: ghcr.io/flashbibi/450-tictactest-mvk:v1.0.0
       options: --user root
       credentials:
         username: ${{ github.actor }}
