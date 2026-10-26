@@ -90,6 +90,19 @@ Ausführen: `./gradlew test --rerun-tasks`. Danach liegt der Coverage-Report unt
 | `playsTheFirstFreeField` (4 Fälle) | Boards, auf denen das erste freie Feld 0, 2, 6 bzw. 8 ist | `GreedyPlayer.play` | genau dieses Feld |
 | `givesUpOnAFullBoard` | ein volles Board | `GreedyPlayer.play` | `IllegalStateException` „cannot play at all" |
 
+### `PerfectPlayerTest`
+
+Der `PerfectPlayer` probiert mit Minimax jede mögliche Fortsetzung der Partie durch und wählt den Zug, der für ihn am besten ausgeht, wenn auch der Gegner perfekt spielt. Bei gleich guten Zügen nimmt er das kleinste Feld.
+
+| Test | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| `findsTheBestMove` (7 Fälle) | Stellungen mit genau einem besten Zug: sofort gewinnen, blocken, auf eine Ecke mit der Mitte antworten, … | `PerfectPlayer.play` | genau dieser Zug |
+| `takesTheLowestFieldAmongEquallyGoodMoves` | leeres Board, jeder Zug führt zu einem Unentschieden | `play` als X | Feld 0 |
+| `givesUpOnAFullBoard` | ein volles Board | `play` | `IllegalStateException` „cannot play at all" |
+| `neverLosesAgainstAnyOpponent` (2 Fälle) | ein Gegner, der an jedem Zug jedes freie Feld ausprobiert | jede mögliche Partie, einmal mit dem PerfectPlayer als X (73 Partien) und einmal als O (569 Partien) | keine einzige Niederlage |
+| `drawsAgainstItself` | PerfectPlayer gegen PerfectPlayer | `play`, Ausgabe abgefangen | Unentschieden, Ausgabe „it's a draw!" |
+| `beatsTheGreedyPlayer` | PerfectPlayer gegen GreedyPlayer, einmal als X und einmal als O | `play`, Ausgabe abgefangen | der PerfectPlayer gewinnt beide Partien |
+
 ## Gefundener Fehler im Originalcode
 
 `HumanPlayer` erstellt bei jedem Zug einen neuen `Scanner` auf `System.in`. Ein Scanner liest mehr als eine Zeile auf einmal in seinen Puffer. Kommen alle Eingaben gleichzeitig an, wie bei `@StdIo({"2", "6"})`, gehen die weiteren Zeilen mit dem ersten Scanner verloren, und der zweite Zug wirft `NoSuchElementException`. An der Tastatur fällt das nicht auf, weil jede Zeile erst nach Enter kommt.
@@ -98,7 +111,7 @@ Der Originalcode soll nicht wesentlich verändert werden. Deshalb ist der Fehler
 
 ## Ergebnis
 
-60 Testfälle, alle grün. JaCoCo: Branch Coverage 100 %, Instruction Coverage 96.8 %. Nicht abgedeckt ist nur `main(...)`, siehe oben.
+73 Testfälle, alle grün. JaCoCo: Branch Coverage 100 %, Instruction Coverage 97.6 %. Nicht abgedeckt ist nur `main(...)`, siehe oben.
 
 ## Screenshot
 
