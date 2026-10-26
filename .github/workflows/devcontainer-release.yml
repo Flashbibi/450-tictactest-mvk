@@ -1,0 +1,54 @@
+name: devcontainer-release
+
+# Wenn auf main das Dockerfile geändert wird:
+#   1. Image bauen und als v1.0.<Laufnummer> in die GitHub Container Registry pushen
+#   2. Pull Request erstellen, der devcontainer.json und alle Workflows auf die neue Version setzt
+# Erst der Merge dieses Pull Requests gibt die neue Version frei.
+#
+# Nur das Dockerfile löst den Workflow aus. Der Pull Request ändert devcontainer.json und die
+# Workflows - würde das wieder einen Build auslösen, entstünde eine Endlosschleife.
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.devcontainer/Dockerfile'
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/flashbibi/450-tictactest-mvk
+      VERSION: v1.0.${{ github.run_number }}
+
+    steps:
+      # Eigenes Token: GITHUB_TOKEN darf keine Workflow-Dateien ändern, und seine PRs starten keine CI
+      - uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.DEVCONTAINER_PR_TOKEN }}
+
+      - name: In GHCR einloggen
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Image bauen und pushen
+        run: |
+          docker build --provenance=false -t "$IMAGE:$VERSION" .devcontainer
+          docker push "$IMAGE:$VERSION"
+
+      - name: Neue Version in devcontainer.json und allen Workflows eintragen
+        run: sed -i "s|$IMAGE:v[0-9.]*|$IMAGE:$VERSION|g" .devcontainer/devcontainer.json .github/workflows/*.yml
+
+      - name: Pull Request erstellen
+        env:
+          GH_TOKEN: ${{ secrets.DEVCONTAINER_PR_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "devcontainer-$VERSION"
+          git commit -am "Use devcontainer image $VERSION"
+          git push origin "devcontainer-$VERSION"
+          gh pr create --base main --title "DevContainer $VERSION verwenden" \
+            --body "Automatisch erstellt, nachdem $IMAGE:$VERSION gepusht wurde. Der Merge gibt die Version frei: danach nutzen alle CI-Jobs und devcontainer.json $VERSION."
