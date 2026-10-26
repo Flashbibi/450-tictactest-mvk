@@ -8,6 +8,7 @@
 dependencies {
     testImplementation 'org.assertj:assertj-core:3.27.7'
     testImplementation 'org.junit.jupiter:junit-jupiter:6.1.3'
+    testImplementation 'org.junit-pioneer:junit-pioneer:2.3.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
@@ -33,6 +34,7 @@ Ausführen: `./gradlew test --rerun-tasks`. Danach liegt der Coverage-Report unt
 | `assertThatBoard(...)` | `BoardAssert.java` | eigene AssertJ-Assertion: `assertThatBoard("XXX ... ...").isWonBy(CROSS)` statt `assertThat(isWin(...)).isTrue()` |
 | Fixture `setUp()` | `TicTacToeTest` | baut vor jedem Test ein frisches Board aus `DRAW_BOARD` (`"XXO OOX XOX"`, volles Brett ohne Sieger) |
 | `playing(0, 1, 2)` | `TicTacToeTest` | Test-Double für einen Spieler: spielt die angegebenen Felder der Reihe nach. Ein Lambda, kein Mocking-Framework |
+| `@StdIo` und `StdOut` | JUnit Pioneer | `@StdIo("4")` ersetzt die Tastatur durch die Eingabe „4", ein Parameter `StdOut out` fängt die Konsolenausgabe ab |
 
 ## Tests (GIVEN_WHEN_THEN)
 
@@ -63,6 +65,23 @@ Ausführen: `./gradlew test --rerun-tasks`. Danach liegt der Coverage-Report unt
 | `rejectsMovesOnATakenField` | X und O spielen beide auf Feld 0 | `play` | `IllegalStateException` „cannot play to position 0" |
 | `aPlayerCannotPlayAgainstItself` | derselbe Spieler als X und O | `play` | `IllegalArgumentException` „players must differ" |
 
+### `TicTacToeTest` – Konsolenausgabe von `play` (Pioneer)
+
+| Test | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| `announcesTheWinnerBelowTheFinalBoard` | X spielt 0, 1, 2 – O spielt 3, 4 | `play`, Ausgabe abgefangen | unter dem letzten Board steht „...and the winner is: CROSS" |
+| `announcesADraw` | Züge, die das `DRAW_BOARD` ergeben | `play`, Ausgabe abgefangen | die Ausgabe ist genau „it's a draw!" |
+| `printsTheBoardBeforeRejectingAMove` | X spielt zweimal auf Feld 4 | `play`, Ausgabe abgefangen | zuerst wird das Board ausgegeben, dann folgt die `IllegalStateException` |
+
+### `HumanPlayerTest` (Pioneer)
+
+| Test | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| `playsTheFieldTypedOnTheKeyboard` | Eingabe „4" | `play` | Rückgabe 4 |
+| `showsTheBoardAndAsksForTheNextMove` | Eingabe „7", Board `X.. .O. ...` | `play` | Ausgabe: das Board, darunter „where to to put the next CROSS? (0-8): " |
+| `crashesOnInputThatIsNotANumber` | Eingabe „vier" | `play` | `NumberFormatException` |
+| `losesTheSecondMoveWhenAllInputArrivesAtOnce` | Eingaben „2" und „6", beide schon da | zwei Züge nacheinander | der erste Zug liefert 2, der zweite wirft `NoSuchElementException` – ein Fehler im Originalcode, siehe unten |
+
 ### `TicTacToePlayerTest` und `GreedyPlayerTest`
 
 | Test | GIVEN | WHEN | THEN |
@@ -71,9 +90,15 @@ Ausführen: `./gradlew test --rerun-tasks`. Danach liegt der Coverage-Report unt
 | `playsTheFirstFreeField` (4 Fälle) | Boards, auf denen das erste freie Feld 0, 2, 6 bzw. 8 ist | `GreedyPlayer.play` | genau dieses Feld |
 | `givesUpOnAFullBoard` | ein volles Board | `GreedyPlayer.play` | `IllegalStateException` „cannot play at all" |
 
+## Gefundener Fehler im Originalcode
+
+`HumanPlayer` erstellt bei jedem Zug einen neuen `Scanner` auf `System.in`. Ein Scanner liest mehr als eine Zeile auf einmal in seinen Puffer. Kommen alle Eingaben gleichzeitig an, wie bei `@StdIo({"2", "6"})`, gehen die weiteren Zeilen mit dem ersten Scanner verloren, und der zweite Zug wirft `NoSuchElementException`. An der Tastatur fällt das nicht auf, weil jede Zeile erst nach Enter kommt.
+
+Der Originalcode soll nicht wesentlich verändert werden. Deshalb ist der Fehler nur mit dem Test `losesTheSecondMoveWhenAllInputArrivesAtOnce` festgehalten. Aus demselben Grund gibt es keinen Test, der über `main(...)` ein ganzes Spiel mit Eingaben durchspielt.
+
 ## Ergebnis
 
-53 Testfälle, alle grün. JaCoCo: Branch Coverage 100 %, Instruction Coverage 91.5 %. Nicht abgedeckt sind `main(...)` und `HumanPlayer`, weil sie von der Tastatur lesen.
+60 Testfälle, alle grün. JaCoCo: Branch Coverage 100 %, Instruction Coverage 96.8 %. Nicht abgedeckt ist nur `main(...)`, siehe oben.
 
 ## Screenshot
 
