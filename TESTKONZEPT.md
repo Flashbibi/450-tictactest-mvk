@@ -152,6 +152,8 @@ Lokal:
 | Mutation Testing mit PITest | `./gradlew pitest` | baut kleine Fehler (Mutanten) in den Produktionscode ein und prüft, ob ein Test sie bemerkt. Kein Schwellenwert, der Score ist eine Kennzahl für die Qualität der Tests |
 | Coverage Gate | `.github/workflows/coverage-gate.yml` | ein Pull Request darf die Coverage von `main` nicht senken, siehe [`COVERAGE-GATE.md`](COVERAGE-GATE.md) |
 
+Aktueller Mutation Score: 97 % (76 von 78 Mutanten erkannt).
+
 Reports:
 
 | Report | Pfad | Artifact in der CI |
