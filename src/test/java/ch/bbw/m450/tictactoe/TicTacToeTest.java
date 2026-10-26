@@ -12,6 +12,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.junitpioneer.jupiter.StdIo;
+import org.junitpioneer.jupiter.StdOut;
 
 import ch.bbw.m450.tictactoe.TicTacToePlayer.Stone;
 
@@ -146,6 +148,36 @@ class TicTacToeTest implements WithAssertions {
 		assertThatThrownBy(() -> TicTacToeMain.play(both, both))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("players must differ");
+	}
+
+	// ---- Konsolenausgabe von play, mit JUnit Pioneer ----
+
+	@Test
+	@StdIo
+	void announcesTheWinnerBelowTheFinalBoard(StdOut out) {
+		TicTacToeMain.play(playing(0, 1, 2), playing(3, 4));
+
+		assertThat(out.capturedString())
+				.contains(TicTacToeMain.toString(boardOf("XXX OO. ...")) + "...and the winner is: CROSS");
+	}
+
+	@Test
+	@StdIo
+	void announcesADraw(StdOut out) {
+		TicTacToeMain.play(playing(0, 8, 6, 5, 1), playing(4, 2, 3, 7));
+
+		assertThat(out.capturedLines()).containsExactly("it's a draw!");
+	}
+
+	@Test
+	@StdIo
+	void printsTheBoardBeforeRejectingAMove(StdOut out) {
+		var x = playing(4, 4);
+		var o = playing(0);
+
+		assertThatThrownBy(() -> TicTacToeMain.play(x, o)).isInstanceOf(IllegalStateException.class);
+		assertThat(out.capturedString())
+				.isEqualTo(TicTacToeMain.toString(boardOf("O.. .X. ...")) + System.lineSeparator());
 	}
 
 	// ---- Hilfsmethoden ----
