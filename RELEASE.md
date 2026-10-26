@@ -62,7 +62,7 @@ Ein Release gilt erst als erfolgreich, wenn das veröffentlichte JAR getestet is
    ```bash
    java -jar tictactest-1.0.0.jar
    ```
-   Die Züge von Hand eintippen. Kommen alle Eingaben auf einmal, zum Beispiel über eine Pipe, verliert der `HumanPlayer` ab dem zweiten Zug die Eingabe (siehe [`TESTDOKUMENTATION.md`](TESTDOKUMENTATION.md)).
+   Die Züge einzeln eintippen. Bis Version 1.0.1 gingen Eingaben, die alle auf einmal kamen, zum Beispiel über eine Pipe, ab dem zweiten Zug verloren (siehe [`TESTDOKUMENTATION.md`](TESTDOKUMENTATION.md)).
 4. das Ergebnis im Protokoll unten eintragen
 
 ## Versionsnummer

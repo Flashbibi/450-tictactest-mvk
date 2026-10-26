@@ -22,7 +22,7 @@ Die konkrete Beschreibung der einzelnen Testfälle nach GIVEN_WHEN_THEN steht in
 
 Das Board ist ein flaches `Stone[9]`; Index `i` entspricht Zeile `i / 3` und Spalte `i % 3`. `null` heisst „Feld leer".
 
-Der Originalcode wird nicht verändert. Neu ist nur der `PerfectPlayer`. Einzige Ausnahme ist der Tippfehler in der Eingabeaufforderung von `HumanPlayer` („where to to put" statt „where to put"), behoben für Release 1.0.1.
+Der Originalcode wird nur an zwei Stellen geändert, jedes Mal für eine Fehlerbehebung in `HumanPlayer`: der Tippfehler in der Eingabeaufforderung („where to to put" statt „where to put", Release 1.0.1) und der Scanner-Fehler, den die End-to-End-Tests gefunden haben (Release 1.0.2, Abschnitt 9). Neu ist sonst nur der `PerfectPlayer`.
 
 ## 3. Teststufen und Abgrenzung
 
@@ -32,8 +32,9 @@ Getestet wird auf **Unit-Ebene**: einzelne Methoden, ohne Netzwerk und ohne Date
 
 Zusätzlich prüft **ArchUnit** eine Architekturregel und **PITest** die Qualität der Tests selbst (Abschnitt 8).
 
+Darüber liegen die **End-to-End-Tests**: ganze Spiele über `main(...)`, so wie ein Benutzer das Programm startet. Tastatur und Konsole ersetzt auch hier JUnit Pioneer (Abschnitt 9).
+
 Bewusst **nicht** Teil dieses Konzepts:
-- ein ganzes Spiel über `main(...)` mit Tastatureingaben – scheitert am Scanner-Fehler in `HumanPlayer` (Abschnitt 10)
 - Performance- und Lasttests – bei einem 3×3-Brett ohne Nutzen
 
 ## 4. Werkzeuge und Umgebung
@@ -115,32 +116,33 @@ Ein Spieler, der die angegebenen Felder der Reihe nach spielt. `TicTacToePlayer`
 
 ## 7. Abdeckung – Ist-Stand
 
-74 Testfälle: 73 aus JUnit Jupiter, 1 aus ArchUnit.
+Unit-Tests (Task `test`): 74 Testfälle, 73 aus JUnit Jupiter und 1 aus ArchUnit. Dazu kommen 8 End-to-End-Tests im Task `e2eTest` (Abschnitt 9).
 
 | Testklasse | Fälle | Deckt ab |
 |---|---|---|
 | `TicTacToeTest` | 49 | `isWin` (37 Fälle, alle 8 Linien, alle Teilbedingungen), `toString`, `play` mit Sieg, Unentschieden und ungültigen Zügen, Konsolenausgabe |
 | `TicTacToePlayerTest` | 2 | `Stone.opponent()` |
 | `GreedyPlayerTest` | 5 | erstes freies Feld, volles Brett |
-| `HumanPlayerTest` | 4 | Tastatureingabe, Ausgabe, ungültige Eingabe, Scanner-Fehler |
+| `HumanPlayerTest` | 4 | Tastatureingabe, Ausgabe, ungültige Eingabe, eine Zeile pro Zug (Regressionstest zum Scanner-Fehler) |
 | `PerfectPlayerTest` | 13 | beste Züge, alle möglichen Partien ohne Niederlage, Spiele gegen andere Spieler |
 | `ArchitectureTest` | 1 | Spieler hängen nicht voneinander ab |
 
-JaCoCo, Stand 26.10.2026:
+JaCoCo misst die Unit-Tests, Stand 26.10.2026:
 
 | Metrik | Wert |
 |---|---|
 | Branch Coverage | 100 % (98 von 98) |
-| Instruction Coverage | 97.6 % (484 von 496) |
+| Instruction Coverage | 97.6 % (486 von 498) |
 
-Nicht abgedeckt ist nur `TicTacToeMain.main(...)`: es startet ein Spiel mit Tastatureingaben, siehe Abschnitt 10.
+Von den Unit-Tests nicht abgedeckt ist nur `TicTacToeMain.main(...)`. Es startet ein ganzes Spiel und wird von den End-to-End-Tests ausgeführt.
 
 ## 8. Durchführung und Quality Gates
 
 Lokal:
 
 ```bash
-./gradlew check --rerun-tasks   # Tests, ArchUnit, Coverage-Report und 90-%-Prüfung
+./gradlew check --rerun-tasks   # Unit-Tests, ArchUnit, End-to-End-Tests, Coverage-Report und 90-%-Prüfung
+./gradlew e2eTest               # nur die End-to-End-Tests
 ./gradlew pitest                # Mutation Testing
 ```
 
@@ -149,7 +151,8 @@ Lokal:
 | Gate | Wo | Wirkung |
 |---|---|---|
 | JaCoCo Coverage Verification | `jacocoTestCoverageVerification` in `build.gradle`, hängt an `check` | der Build schlägt fehl, wenn die Branch Coverage unter 90 % liegt |
-| Mutation Testing mit PITest | `./gradlew pitest` | baut kleine Fehler (Mutanten) in den Produktionscode ein und prüft, ob ein Test sie bemerkt. Kein Schwellenwert, der Score ist eine Kennzahl für die Qualität der Tests |
+| End-to-End-Tests | Task `e2eTest` in `build.gradle`, hängt an `check` | der Build schlägt fehl, wenn ein ganzes Spiel nicht mehr wie erwartet abläuft. Ein hängender Test bricht nach 5 Sekunden ab |
+| Mutation Testing mit PITest | `./gradlew pitest` | baut kleine Fehler (Mutanten) in den Produktionscode ein und prüft, ob ein Unit-Test sie bemerkt. Kein Schwellenwert, der Score ist eine Kennzahl für die Qualität der Tests |
 | Coverage Gate | `.github/workflows/coverage-gate.yml` | ein Pull Request darf die Coverage von `main` nicht senken, siehe [`COVERAGE-GATE.md`](COVERAGE-GATE.md) |
 
 Aktueller Mutation Score: 97 % (76 von 78 Mutanten erkannt).
@@ -159,23 +162,49 @@ Reports:
 | Report | Pfad | Artifact in der CI |
 |---|---|---|
 | Testergebnisse | `build/reports/tests/test/index.html` | `test-report` |
+| End-to-End-Tests | `build/reports/tests/e2eTest/index.html` | `e2e-test-report` |
 | Coverage | `build/reports/jacoco/test/html/index.html` | `jacoco-report` |
 | Mutation Testing | `build/reports/pitest/index.html` | `pitest-report` |
 
-In der CI läuft bei jedem Push und jedem Pull Request zuerst `./gradlew assemble` (Kompilieren ohne Tests), danach im separaten Job `./gradlew check pitest`. Alle drei Reports werden als Artifacts gespeichert, auch wenn ein Schritt fehlschlägt.
+In der CI läuft bei jedem Push und jedem Pull Request zuerst `./gradlew assemble` (Kompilieren ohne Tests), danach im separaten Job `./gradlew check pitest`. `check` schliesst die End-to-End-Tests ein. Alle vier Reports werden als Artifacts gespeichert, auch wenn ein Schritt fehlschlägt.
 
-## 9. Akzeptanzkriterien
+## 9. End-to-End-Tests
+
+`TicTacToeE2ETest` startet das Spiel über `main(...)`: Mensch (X) gegen GreedyPlayer (O), der immer das erste freie Feld nimmt. JUnit Pioneer ersetzt die Tastatur durch feste Eingaben (`@StdIo`) und fängt die Ausgabe ab. Die Klasse trägt den Tag `e2e` und läuft im eigenen Gradle-Task `e2eTest`, den `check` und damit auch die CI ausführt.
+
+**Schutz vor Denial of Service:** Ein Programm, das auf Eingaben wartet, kann hängen bleiben, zum Beispiel in einer Endlosschleife bei ungültigen Eingaben oder beim Warten auf eine Eingabe, die nie kommt. Alle E2E-Tests laufen deshalb mit `@Timeout(5 Sekunden)` in einem eigenen Thread. Hängt ein Test, bricht JUnit ihn ab und er schlägt fehl, statt den Build zu blockieren.
+
+| ID | Testfall | Eingabe | Erwartet | Tatsächlich |
+|---|---|---|---|---|
+| E2E-01 | X gewinnt | 3, 4, 5 | X gewinnt mit der mittleren Zeile: „...and the winner is: CROSS" | bis 1.0.1 Absturz beim zweiten Zug (Fehler F1), seit 1.0.2 wie erwartet |
+| E2E-02 | O gewinnt | 8, 7, 5 | der GreedyPlayer gewinnt mit der oberen Zeile: „...and the winner is: CIRCLE" | wie E2E-01 |
+| E2E-03 | Unentschieden | 1, 3, 4, 6, 8 | volles Brett ohne Sieger: „it's a draw!" | wie E2E-01 |
+| E2E-04 | Text statt Zahl | vier | das Spiel fragt erneut | Abbruch mit `NumberFormatException` (Fehler F2) |
+| E2E-05 | Feld ausserhalb des Bretts | 9 | das Spiel fragt erneut | Abbruch mit `IllegalStateException` „cannot play to position 9" (F2) |
+| E2E-06 | besetztes Feld | 4, dann 0 | das Spiel fragt erneut | Abbruch mit `IllegalStateException` „cannot play to position 0" (F2); bis 1.0.1 schon vorher Absturz wegen F1 |
+| E2E-07 | Terminal-Steuerzeichen (böswillig) | ESC[2J, leert das Terminal | wird abgelehnt und nicht ausgegeben | Abbruch mit `NumberFormatException` (F2), die Steuerzeichen erscheinen nicht in der Ausgabe |
+| E2E-08 | Eingabe endet mitten im Spiel (Denial of Service) | 4, danach nichts mehr | das Spiel wartet nicht ewig | sofortiger Abbruch mit `NoSuchElementException` |
+
+Die Tests prüfen das tatsächliche Verhalten. So bleibt der Build grün, und jede Änderung daran fällt sofort auf.
+
+### Gefundene Fehler
+
+| Nr. | Fehler | Status |
+|---|---|---|
+| F1 | `HumanPlayer` erstellte bei jedem Zug einen neuen `Scanner`. Ein Scanner liest mehr als eine Zeile auf einmal in seinen Puffer. Kamen alle Eingaben gleichzeitig an (Pioneer, Pipe), ging ab dem zweiten Zug die Eingabe verloren. An der Tastatur fiel das nicht auf | **test-first behoben** in 1.0.2: Zuerst kamen E2E-01 bis E2E-08 und `HumanPlayerTest.readsOneLinePerMove` dazu, fünf davon waren rot. Danach liest `HumanPlayer` alle Züge mit einem einzigen Scanner, und alle Tests wurden grün |
+| F2 | Ein ungültiger Zug beendet das ganze Spiel mit einer Exception, statt erneut zu fragen | dokumentiert, nicht behoben – dafür müsste der Originalcode umgebaut werden |
+
+## 10. Akzeptanzkriterien
 
 Ein Stand gilt als abgenommen, wenn:
 
-1. `./gradlew check` mit `BUILD SUCCESSFUL` endet – damit sind alle Tests grün und die Branch Coverage liegt bei mindestens 90 %
+1. `./gradlew check` mit `BUILD SUCCESSFUL` endet – damit sind alle Unit- und End-to-End-Tests grün und die Branch Coverage liegt bei mindestens 90 %
 2. der CI-Workflow auf dem Branch grün ist
 3. jeder neue Test in `TESTDOKUMENTATION.md` nach GIVEN_WHEN_THEN dokumentiert ist
 4. kein Test von der Ausführungsreihenfolge eines anderen abhängt
 
-## 10. Offene Punkte
+## 11. Offene Punkte
 
 | Thema | Warum offen |
 |---|---|
-| Scanner-Fehler in `HumanPlayer` | `HumanPlayer` erstellt pro Zug einen neuen `Scanner`. Kommen alle Eingaben auf einmal (Pioneer, Pipe), geht ab dem zweiten Zug die Eingabe verloren. An der Tastatur fällt es nicht auf. Der Originalcode soll nicht verändert werden, deshalb ist der Fehler nur im Test `losesTheSecondMoveWhenAllInputArrivesAtOnce` dokumentiert |
-| `main(...)` ungetestet | ein Spiel über `main` mit festen Eingaben scheitert am Scanner-Fehler |
+| Ungültige Eingaben beenden das Spiel (Fehler F2, Abschnitt 9) | erneut nachzufragen hiesse, den Originalcode umzubauen. Der Originalcode soll aber nicht wesentlich verändert werden |

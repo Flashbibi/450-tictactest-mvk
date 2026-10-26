@@ -2,6 +2,14 @@
 
 Alle wichtigen Änderungen an TicTacTest, die neueste Version zuoberst. Wie die Versionsnummer entsteht, steht in [`RELEASE.md`](RELEASE.md).
 
+## 1.0.2 - 2026-10-26
+
+### Fixed
+- Kommen mehrere Eingaben auf einmal an, zum Beispiel über eine Pipe, gehen keine Züge mehr verloren. Bisher brach das Spiel dann beim zweiten Zug ab.
+
+### Added
+- End-to-End-Tests: ganze Spiele über die Konsole, ungültige und böswillige Eingaben, im eigenen Gradle-Task `e2eTest`
+
 ## 1.0.1 - 2026-10-26
 
 ### Fixed
