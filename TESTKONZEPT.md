@@ -22,7 +22,7 @@ Die konkrete Beschreibung der einzelnen Testfälle nach GIVEN_WHEN_THEN steht in
 
 Das Board ist ein flaches `Stone[9]`; Index `i` entspricht Zeile `i / 3` und Spalte `i % 3`. `null` heisst „Feld leer".
 
-Der Originalcode wird nicht verändert. Neu ist nur der `PerfectPlayer`.
+Der Originalcode wird nicht verändert. Neu ist nur der `PerfectPlayer`. Einzige Ausnahme ist der Tippfehler in der Eingabeaufforderung von `HumanPlayer` („where to to put" statt „where to put"), behoben für Release 1.0.1.
 
 ## 3. Teststufen und Abgrenzung
 

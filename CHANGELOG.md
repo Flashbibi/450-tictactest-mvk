@@ -2,6 +2,11 @@
 
 Alle wichtigen Änderungen an TicTacTest, die neueste Version zuoberst. Wie die Versionsnummer entsteht, steht in [`RELEASE.md`](RELEASE.md).
 
+## 1.0.1 - 2026-10-26
+
+### Fixed
+- Tippfehler in der Eingabeaufforderung: statt „where to to put the next …" heisst es jetzt „where to put the next …"
+
 ## 1.0.0 - 2026-10-26
 
 ### Added
