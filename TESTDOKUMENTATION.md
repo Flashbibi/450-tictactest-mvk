@@ -21,9 +21,21 @@ dependencies {
 }
 
 test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags 'e2e'
+    }
     finalizedBy jacocoTestReport
 }
+
+tasks.register('e2eTest', Test) {
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'e2e'
+    }
+}
+
+check.dependsOn e2eTest
 ```
 
 `junit-jupiter` ist das Aggregat-Artefakt und enthält `junit-jupiter-params` bereits – für `@ParameterizedTest` braucht es keine zusätzliche Dependency.
@@ -31,7 +43,8 @@ test {
 Ausführen:
 
 ```bash
-./gradlew check --rerun-tasks   # Tests, ArchUnit, Coverage-Report und Prüfung auf 90 % Branch Coverage
+./gradlew check --rerun-tasks   # Unit-Tests, ArchUnit, End-to-End-Tests, Coverage-Report und Prüfung auf 90 % Branch Coverage
+./gradlew e2eTest               # nur die End-to-End-Tests
 ./gradlew pitest                # Mutation Testing
 ```
 
@@ -50,6 +63,7 @@ Wo die Reports liegen, steht in [`TESTKONZEPT.md`](TESTKONZEPT.md), Abschnitt 8.
 | Fixture `setUp()` | `TicTacToeTest` | baut vor jedem Test ein frisches Board aus `DRAW_BOARD` (`"XXO OOX XOX"`, volles Brett ohne Sieger) |
 | `playing(0, 1, 2)` | `TicTacToeTest` | Test-Double für einen Spieler: spielt die angegebenen Felder der Reihe nach. Ein Lambda, kein Mocking-Framework |
 | `@StdIo` und `StdOut` | JUnit Pioneer | `@StdIo("4")` ersetzt die Tastatur durch die Eingabe „4", ein Parameter `StdOut out` fängt die Konsolenausgabe ab |
+| `@Tag("e2e")` und `@Timeout` | `TicTacToeE2ETest` | der Tag ordnet die Klasse dem Gradle-Task `e2eTest` zu, der Timeout bricht einen hängenden Test nach 5 Sekunden ab |
 
 ## Tests (GIVEN_WHEN_THEN)
 
@@ -95,7 +109,7 @@ Wo die Reports liegen, steht in [`TESTKONZEPT.md`](TESTKONZEPT.md), Abschnitt 8.
 | `playsTheFieldTypedOnTheKeyboard` | Eingabe „4" | `play` | Rückgabe 4 |
 | `showsTheBoardAndAsksForTheNextMove` | Eingabe „7", Board `X.. .O. ...` | `play` | Ausgabe: das Board, darunter „where to put the next CROSS? (0-8): " |
 | `crashesOnInputThatIsNotANumber` | Eingabe „vier" | `play` | `NumberFormatException` |
-| `losesTheSecondMoveWhenAllInputArrivesAtOnce` | Eingaben „2" und „6", beide schon da | zwei Züge nacheinander | der erste Zug liefert 2, der zweite wirft `NoSuchElementException` – ein Fehler im Originalcode, siehe unten |
+| `readsOneLinePerMove` | Eingaben „2" und „6", beide schon da | zwei Züge nacheinander | der erste Zug liefert 2, der zweite 6 – Regressionstest zum Scanner-Fehler, siehe unten |
 
 ### `TicTacToePlayerTest` und `GreedyPlayerTest`
 
@@ -126,15 +140,30 @@ ArchUnit ist das zusätzlich gewählte Testing-Framework. Es läuft über die JU
 |---|---|---|---|
 | `PLAYERS_DO_NOT_KNOW_EACH_OTHER` | der kompilierte Produktionscode, ohne Tests | ArchUnit prüft die Abhängigkeiten aller Klassen im Paket `players` | keine Klasse in `players` verwendet eine andere Klasse aus `players` – ein Spieler spricht nur über `TicTacToePlayer` und `TicTacToeMain` mit dem Spiel |
 
+### `TicTacToeE2ETest` (End-to-End, Pioneer)
+
+Ganze Spiele über `main(...)`: Mensch (X) gegen GreedyPlayer (O), der immer das erste freie Feld nimmt. Erwartetes und tatsächliches Verhalten stehen in [`TESTKONZEPT.md`](TESTKONZEPT.md), Abschnitt 9.
+
+| Test | GIVEN | WHEN | THEN |
+|---|---|---|---|
+| `crossWinsAGame` (E2E-01) | Eingaben 3, 4, 5 | `main` | die Ausgabe endet mit dem Brett `OO. XXX ...` und „...and the winner is: CROSS" |
+| `circleWinsAGame` (E2E-02) | Eingaben 8, 7, 5 | `main` | die Ausgabe endet mit dem Brett `OOO ..X .XX` und „...and the winner is: CIRCLE" |
+| `gameEndsInADraw` (E2E-03) | Eingaben 1, 3, 4, 6, 8 | `main` | die Ausgabe endet mit „it's a draw!" |
+| `stopsOnTextInsteadOfANumber` (E2E-04) | Eingabe „vier" | `main` | `NumberFormatException` |
+| `stopsOnAFieldOutsideTheBoard` (E2E-05) | Eingabe „9" | `main` | `IllegalStateException` „cannot play to position 9" |
+| `stopsOnAFieldThatIsTaken` (E2E-06) | Eingabe 4, dann 0 – das Feld hat der GreedyPlayer schon genommen | `main` | `IllegalStateException` „cannot play to position 0" |
+| `doesNotPrintTerminalControlCharacters` (E2E-07) | Eingabe ESC[2J, das leert das Terminal | `main` | `NumberFormatException`, die Steuerzeichen erscheinen nicht in der Ausgabe |
+| `stopsInsteadOfWaitingWhenTheInputEnds` (E2E-08) | nur die Eingabe 4, danach endet die Eingabe | `main` | `NoSuchElementException` beim zweiten Zug, innerhalb des Timeouts |
+
 ## Gefundener Fehler im Originalcode
 
-`HumanPlayer` erstellt bei jedem Zug einen neuen `Scanner` auf `System.in`. Ein Scanner liest mehr als eine Zeile auf einmal in seinen Puffer. Kommen alle Eingaben gleichzeitig an, wie bei `@StdIo({"2", "6"})`, gehen die weiteren Zeilen mit dem ersten Scanner verloren, und der zweite Zug wirft `NoSuchElementException`. An der Tastatur fällt das nicht auf, weil jede Zeile erst nach Enter kommt.
+`HumanPlayer` hat bei jedem Zug einen neuen `Scanner` auf `System.in` erstellt. Ein Scanner liest mehr als eine Zeile auf einmal in seinen Puffer. Kamen alle Eingaben gleichzeitig an, wie bei `@StdIo({"2", "6"})`, gingen die weiteren Zeilen mit dem ersten Scanner verloren, und der zweite Zug warf `NoSuchElementException`. An der Tastatur fiel das nicht auf, weil jede Zeile erst nach Enter kommt.
 
-Der Originalcode soll nicht wesentlich verändert werden. Deshalb ist der Fehler nur mit dem Test `losesTheSecondMoveWhenAllInputArrivesAtOnce` festgehalten. Aus demselben Grund gibt es keinen Test, der über `main(...)` ein ganzes Spiel mit Eingaben durchspielt.
+Der Fehler ist in Release 1.0.2 test-first behoben: Zuerst kamen die End-to-End-Tests und `readsOneLinePerMove` dazu, fünf davon waren rot. Danach liest `HumanPlayer` alle Züge mit einem einzigen Scanner, und alle Tests wurden grün. Ein weiterer gefundener Fehler steht in [`TESTKONZEPT.md`](TESTKONZEPT.md), Abschnitt 9.
 
 ## Ergebnis
 
-74 Testfälle (73 JUnit Jupiter, 1 ArchUnit), alle grün. JaCoCo: Branch Coverage 100 %, Instruction Coverage 97.6 %. Die JaCoCo-Prüfung im Build verlangt mindestens 90 % Branch Coverage. Nicht abgedeckt ist nur `main(...)`, siehe oben.
+74 Unit-Testfälle (73 JUnit Jupiter, 1 ArchUnit) und 8 End-to-End-Tests, alle grün. JaCoCo misst die Unit-Tests: Branch Coverage 100 %, Instruction Coverage 97.6 %. Die JaCoCo-Prüfung im Build verlangt mindestens 90 % Branch Coverage. Von den Unit-Tests nicht abgedeckt ist nur `main(...)`, das führen die End-to-End-Tests aus.
 
 ## Screenshot
 

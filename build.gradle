@@ -6,7 +6,7 @@ plugins {
 }
 
 // Version der Anwendung (MAJOR.MINOR.PATCH), siehe RELEASE.md. Der Release-Tag ist "v" + diese Version
-version = '1.0.1'
+version = '1.0.2'
 
 repositories {
 	mavenCentral()
