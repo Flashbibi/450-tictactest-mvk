@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>TicTacTest Coverage</title>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+	<style>
+		body { font-family: sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+	</style>
+</head>
+<body>
+	<h1>TicTacTest: Test Coverage auf main</h1>
+	<p>Ein Messpunkt pro Push auf <code>main</code>. Rohdaten: <a href="coverage.csv">coverage.csv</a></p>
+	<canvas id="chart"></canvas>
+
+	<script>
+		// coverage.csv hat die Spalten Datum,Commit,Instruction,Branch
+		fetch('coverage.csv')
+			.then(response => response.text())
+			.then(text => {
+				const rows = text.trim().split('\n').slice(1).map(line => line.split(','));
+				new Chart(document.getElementById('chart'), {
+					type: 'line',
+					data: {
+						labels: rows.map(row => [row[0], row[1]]), // Datum und Commit untereinander
+						datasets: [
+							{ label: 'Instruction Coverage', data: rows.map(row => Number(row[2])) },
+							{ label: 'Branch Coverage', data: rows.map(row => Number(row[3])) }
+						]
+					},
+					options: {
+						scales: { y: { min: 0, max: 100, title: { display: true, text: 'Coverage in %' } } }
+					}
+				});
+			});
+	</script>
+</body>
+</html>
