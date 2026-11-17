@@ -59,3 +59,4 @@ Ohne das Secret bricht der Workflow gleich beim ersten Schritt ab.
 |---|---|---|
 | `v1.0.0` | 16.09.2026 | Erste Version, von Hand gepusht. Alpine 3.24, Azul Zulu 25, User `dev` |
 | `v1.0.1` | 26.10.2026 | Erste Version aus dem Workflow `devcontainer-release`. Neu: Beschreibung als Label `org.opencontainers.image.description` |
+| `v1.0.2` | 17.11.2026 | Neu: ttyd, nginx und curl für die Web-Konsole |

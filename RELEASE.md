@@ -111,3 +111,4 @@ Ein Release gilt erst als erfolgreich, wenn die veröffentlichten Dateien getest
 | 1.0.0 | 26.10.2026 | Linus | ja | ja | – |
 | 1.0.1 | 26.10.2026 | Linus | ja | ja | – |
 | 1.0.2 | 26.10.2026 | Linus | ja | ja | – |
+| 1.1.0 | 17.11.2026 | Linus | ja | ja | ja |
