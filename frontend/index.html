@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>TicTacTest</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<h1>TicTacTest</h1>
+
+	<p>Du spielst X, der Computer spielt O. Wer zuerst drei in einer Reihe hat, gewinnt.</p>
+	<ol>
+		<li>Klicke ins Terminal.</li>
+		<li>Tippe die Nummer eines freien Feldes (0 bis 8) und drücke Enter. Die freien Felder zeigen ihre Nummer.</li>
+		<li>Ist das Spiel zu Ende, drückst du Enter, und ein neues Spiel beginnt.</li>
+	</ol>
+	<p class="hint">Eine ungültige Eingabe, zum Beispiel Text oder ein besetztes Feld, beendet das Spiel. Auch dann startet Enter ein neues.</p>
+
+	<iframe id="terminal" title="TicTacTest im Terminal"></iframe>
+
+	<footer>
+		Frontend <span id="frontend-version">…</span> · Backend <span id="backend-version">…</span>
+	</footer>
+
+	<!-- config.js zuerst: Sie enthält die Adresse der Web-Konsole für diese Umgebung -->
+	<script src="config.js"></script>
+	<script src="app.js"></script>
+</body>
+</html>
