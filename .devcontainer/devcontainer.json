@@ -9,6 +9,11 @@
 			]
 		}
 	},
+	"forwardPorts": [8080, 8000],
+	"portsAttributes": {
+		"8080": { "label": "Web-Konsole" },
+		"8000": { "label": "Frontend" }
+	},
 	"postCreateCommand": "chmod +x ./gradlew && ./gradlew --version",
 	"remoteUser": "dev"
 }
