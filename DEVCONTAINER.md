@@ -8,7 +8,7 @@ Dieses Dokument beschreibt den Ablauf. Die Entscheidungen dahinter stehen in [`D
 
 | Datei | Zweck |
 |---|---|
-| `.devcontainer/Dockerfile` | das Image: Alpine, Azul Zulu JDK 25, bash, git, User `dev` (UID:GID 1000:1000) |
+| `.devcontainer/Dockerfile` | das Image: Alpine, Azul Zulu JDK 25, bash, git, User `dev` (UID:GID 1000:1000), dazu ttyd, nginx und curl für die Web-Konsole |
 | `.devcontainer/devcontainer.json` | lokale Entwicklungsumgebung für VS Code, zieht eine feste Image-Version aus der GHCR |
 | `.github/workflows/devcontainer-release.yml` | baut und pusht das Image, erstellt den PR mit der neuen Version |
 | `.github/workflows/build.yml` | die CI, läuft im DevContainer |
