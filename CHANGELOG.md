@@ -2,6 +2,13 @@
 
 Alle wichtigen Änderungen an TicTacTest, die neueste Version zuoberst. Wie die Versionsnummer entsteht, steht in [`RELEASE.md`](RELEASE.md).
 
+## 1.1.0 - 2026-11-17
+
+### Added
+- TicTacTest im Browser: Die Web-Konsole startet für jeden Besucher das JAR aus dem Release in einem eigenen Terminal. Das Spiel selbst ist unverändert. Start und Aufbau stehen in [`WEBKONSOLE.md`](WEBKONSOLE.md)
+- Frontend: eine Webseite mit Spielregeln, eingebettetem Terminal und den Versionen von Frontend und Backend. Sie liegt jedem Release als `tictactest-frontend-<Version>.zip` bei
+- Die Version des laufenden Backends ist per HTTP abfragbar: `/version.txt`
+
 ## 1.0.2 - 2026-10-26
 
 ### Fixed

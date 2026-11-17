@@ -33,7 +33,15 @@ jobs:
       - name: JAR bauen
         run: ./gradlew jar
 
-      - name: GitHub Release erstellen und JAR anhaengen
+      # Zweites Artefakt: das Frontend als ZIP. Im Repository steht in version.txt "dev", im ZIP die Version des Tags
+      - name: Frontend-Archiv bauen
+        run: |
+          version=${GITHUB_REF_NAME#v}
+          echo "$version" > frontend/version.txt
+          cd frontend
+          zip -r "../build/tictactest-frontend-$version.zip" .
+
+      - name: GitHub Release erstellen, JAR und Frontend anhaengen
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -49,7 +57,7 @@ jobs:
             # der Abschnitt dieser Version aus CHANGELOG.md, bis zur nächsten Überschrift "## "
             awk -v v="$version" '$1 == "##" { inside = ($2 == v); next } inside' CHANGELOG.md
             echo ""
-            echo "Artefakt: tictactest-$version.jar"
+            echo "Artefakte: tictactest-$version.jar, tictactest-frontend-$version.zip"
           } > notes.md
-          gh release create "$GITHUB_REF_NAME" "build/libs/tictactest-$version.jar" \
+          gh release create "$GITHUB_REF_NAME" "build/libs/tictactest-$version.jar" "build/tictactest-frontend-$version.zip" \
             --title "TicTacTest $GITHUB_REF_NAME" --notes-file notes.md
