@@ -3,6 +3,7 @@
 const webConsoleUrl = window.TICTACTEST_CONFIG.webConsoleUrl;
 
 document.getElementById("terminal").src = webConsoleUrl;
+document.getElementById("terminal-link").href = webConsoleUrl;
 
 showVersion("frontend-version", "version.txt");                          // liegt neben dieser Seite
 showVersion("backend-version", new URL("version.txt", webConsoleUrl));   // liefert nginx vor der Web-Konsole
