@@ -1,6 +1,6 @@
 # Release-Prozess
 
-Stand: 17.11.2026 · Workflow: [`.github/workflows/release.yml`](.github/workflows/release.yml) · Änderungen: [`CHANGELOG.md`](CHANGELOG.md)
+Stand: 18.11.2026 · Workflow: [`.github/workflows/release.yml`](.github/workflows/release.yml) · Änderungen: [`CHANGELOG.md`](CHANGELOG.md)
 
 ## Ablauf
 
@@ -74,7 +74,8 @@ Ein Release gilt erst als erfolgreich, wenn die veröffentlichten Dateien getest
    unzip -o tictactest-frontend-1.1.0.zip -d frontend-1.1.0
    "$JAVA_HOME/bin/jwebserver" -p 8000 -d /tmp/frontend-1.1.0
    ```
-   Auf <http://localhost:8000> eine Partie spielen. Unten müssen Frontend und Backend beide die neue Version zeigen
+   Auf <http://localhost:8000> eine Partie spielen. Unten müssen Frontend und Backend beide die neue Version zeigen.
+   Ab Version 1.2.0 geht das auch auf AWS: nach [`docs/deployment.md`](docs/deployment.md) deployen und auf der `frontend_url` spielen
 5. das Ergebnis im Protokoll unten eintragen
 
 ## Versionsnummer
@@ -99,7 +100,7 @@ Ein Release gilt erst als erfolgreich, wenn die veröffentlichten Dateien getest
 | Welcher Commit gehört zu einem Release? | der Commit, auf den der Tag zeigt. Er steht in den Release Notes und auf GitHub beim Tag |
 | Wie wird das JAR gebaut? | mit `./gradlew jar`. Das Manifest enthält die `Main-Class`, deshalb startet `java -jar` das Spiel. Der Dateiname kommt aus `settings.gradle` (`tictactest`) und der Version |
 | Wo kann das JAR heruntergeladen werden? | auf der Release-Seite: <https://github.com/Flashbibi/450-tictactest-mvk/releases>, zusammen mit dem Frontend-Archiv |
-| Was gehört zum Release, was zur Infrastruktur? | Zum Release gehört, was sich mit jeder Version ändert und genau so getestet wurde: das JAR und das Frontend-Archiv. Zur Infrastruktur gehört, wie und wo es läuft: `webkonsole/start.sh`, `webkonsole/nginx.conf` und die `config.js` einer Umgebung. Das ist für jede Version gleich, aber pro Umgebung verschieden (Ports, Adressen). Darum liegt es im Repository und nicht im Release |
+| Was gehört zum Release, was zur Infrastruktur? | Zum Release gehört, was sich mit jeder Version ändert und genau so getestet wurde: das JAR und das Frontend-Archiv. Zur Infrastruktur gehört, wie und wo es läuft: `webkonsole/start.sh`, `webkonsole/nginx.conf`, die OpenTofu-Konfiguration in `infra/` und die `config.js` einer Umgebung. Das ist für jede Version gleich, aber pro Umgebung verschieden (Ports, Adressen). Darum liegt es im Repository und nicht im Release |
 | Warum ist auch das Frontend ein Release-Asset? | Damit genau die getesteten Dateien einer Version ausgeliefert werden und nicht irgendein Stand von `main`. Jede Version bleibt herunterladbar, ein Rollback ist einfach. Die Pipeline in Auftrag 3 kann das Frontend ausliefern, ohne das Repository zu klonen oder etwas zu bauen |
 | Was enthält das Changelog? | pro Version die Nummer, das Datum und die Änderungen, aufgeteilt in Added (neu), Changed (geändert) und Fixed (behoben) |
 | Was passiert, wenn beim Release ein Test fehlschlägt? | der Workflow bricht bei `./gradlew check` ab. Es entsteht kein Release und kein JAR. Den Fehler über einen Pull Request beheben. Weil nichts veröffentlicht wurde, darf der Tag danach gelöscht (`git push --delete origin v1.0.0` und `git tag -d v1.0.0`) und auf dem neuen Stand von `main` noch einmal gesetzt werden |

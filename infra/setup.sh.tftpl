@@ -1,0 +1,86 @@
+#!/bin/bash
+# Einrichtung der Instanz. cloud-init führt dieses Skript genau einmal aus, beim allerersten Start.
+# Es installiert nur die Laufzeitumgebung und den Dienst, keine Version des Spiels. Welche Version läuft,
+# bestimmt das Deployment: Es legt das JAR in den privaten Bucket, und der Dienst holt es vor jedem Start.
+# Die Platzhalter wie ttyd_version setzt OpenTofu mit templatefile() ein (siehe instance.tf).
+# Log der Einrichtung auf der Instanz: /var/log/cloud-init-output.log
+set -euxo pipefail
+
+# Java 25 (Amazon Corretto) und nginx aus dem Paket-Repository von Amazon Linux 2023.
+# dnf prüft die Signatur jedes Pakets. Welche Paketversion kommt, legt die Version der AMI fest.
+dnf install -y java-25-amazon-corretto-headless nginx
+
+# ttyd ist nicht im Repository. Feste Version vom GitHub-Release, mit Prüfsumme:
+# Stimmt die Datei nicht genau, bricht die Einrichtung hier ab.
+curl -fsSL --retry 5 -o /usr/local/bin/ttyd \
+  "https://github.com/tsl0922/ttyd/releases/download/${ttyd_version}/ttyd.x86_64"
+echo "${ttyd_sha256}  /usr/local/bin/ttyd" | sha256sum -c -
+chmod 755 /usr/local/bin/ttyd
+
+# Eigener Benutzer für den Dienst, ohne Login und ohne root-Rechte
+useradd --system --home-dir /opt/tictactest --shell /sbin/nologin tictactest
+install -d -o tictactest -g tictactest -m 755 /opt/tictactest
+
+# Die Web-Konsole als systemd-Dienst
+cat > /etc/systemd/system/tictactest.service <<'EOF'
+[Unit]
+Description=TicTacTest Web-Konsole (ttyd)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=tictactest
+WorkingDirectory=/opt/tictactest
+Environment=AWS_DEFAULT_REGION=${region}
+# Vor jedem Start die deployte Version aus dem privaten Bucket holen: tictactest.jar und version.txt.
+# Die Zugangsdaten kommen vom Instance Profile, auf der Instanz liegen keine Access Keys.
+ExecStartPre=/usr/bin/aws s3 cp --recursive s3://${artifacts_bucket}/backend/ /opt/tictactest/
+# ttyd startet für jeden Besucher nur das JAR, nie eine Shell
+ExecStart=/usr/local/bin/ttyd --interface 127.0.0.1 --port 7681 --writable --check-origin --max-clients ${max_clients} java -Xmx32m -jar /opt/tictactest/tictactest.jar
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# nginx: die einzige Adresse nach aussen, auf Port 80. Gleich aufgebaut wie webkonsole/nginx.conf,
+# aber als Systemdienst. Die Worker laufen als Benutzer nginx.
+cat > /etc/nginx/nginx.conf <<'EOF'
+user nginx;
+worker_processes auto;
+pid /run/nginx.pid;
+error_log /var/log/nginx/error.log;
+
+events {}
+
+http {
+    access_log /var/log/nginx/access.log;
+
+    server {
+        listen 80;
+
+        # Die Version des laufenden Backends. Das Deployment legt sie neben das JAR.
+        # Das Frontend liegt auf einer anderen Adresse, darum der CORS-Header.
+        location = /version.txt {
+            root /opt/tictactest;
+            default_type text/plain;
+            add_header Access-Control-Allow-Origin *;
+            add_header Cache-Control no-store;
+        }
+
+        # Alles andere geht an ttyd: die Seite mit dem Terminal und die WebSocket-Verbindung
+        location / {
+            proxy_pass http://127.0.0.1:7681;
+            proxy_http_version 1.1;
+            proxy_set_header Host $http_host;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection upgrade;
+        }
+    }
+}
+EOF
+
+# Beide Dienste beim Booten starten und jetzt gleich einmal
+systemctl daemon-reload
+systemctl enable --now nginx tictactest

@@ -2,3 +2,8 @@ gradlew text eol=lf
 *.bat text eol=crlf
 *.jar binary
 *.sh text eol=lf
+# OpenTofu: setup.sh.tftpl wird zu user_data. Mit Windows-Zeilenenden liefe das Skript auf der Instanz nicht,
+# und andere Zeilenenden als beim letzten apply würden die Instanz ersetzen.
+*.tf text eol=lf
+*.tftpl text eol=lf
+*.hcl text eol=lf
