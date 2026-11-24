@@ -227,7 +227,7 @@ Danach zurück auf `max_clients = 10`: wieder 1 to add, 1 to change, 1 to destro
 
 `destroy` löschte alle 9 Ressourcen, die Buckets samt Inhalt (`delete: …` und `remove_bucket: …` von `aws s3 rb --force`). Nach 2 Minuten Wartezeit legte `apply` die 9 Ressourcen wieder an, `make_bucket` ging beim ersten Versuch durch. Die Bucket-Namen und damit die `frontend_url` sind gleich geblieben, neu sind nur die Instanz und die Elastic IP.
 
-Was nötig war, bis wieder dieselbe Version lief: Die neue Instanz richtete sich selbst ein, die Web-Konsole antwortete rund 45 Sekunden nach dem `apply`. Ohne Deployment gaben `version.txt` und das Frontend aber 404, weil beide Buckets leer waren. Erst ein neues Deployment von 1.2.0 nach `docs/deployment.md` (24 Sekunden) brachte alles zurück, mit `config.js` auf die neue IP. Von `destroy` bis wieder 1.2.0 lief: 4 Minuten 46 Sekunden, davon 2 Minuten Wartezeit.
+Was nötig war, bis wieder dieselbe Version lief: Die neue Instanz richtete sich selbst ein, die Web-Konsole antwortete rund 45 Sekunden nach dem `apply`. Ohne Deployment gaben `version.txt` und das Frontend aber 404: Im Artefakt-Bucket lag nichts, im Frontend-Bucket nur die `config.js`, die `tofu apply` schon mit der neuen IP geschrieben hatte. Erst ein neues Deployment von 1.2.0 nach `docs/deployment.md` (24 Sekunden) brachte das JAR, `version.txt` und die übrigen Frontend-Dateien zurück. Von `destroy` bis wieder 1.2.0 lief: 4 Minuten 46 Sekunden, davon 2 Minuten Wartezeit.
 
 ### GitHub Actions gesperrt
 
