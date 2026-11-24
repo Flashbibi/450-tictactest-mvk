@@ -71,7 +71,7 @@ ttyd --interface 127.0.0.1 --port 7681 --writable --check-origin --max-clients 1
 | Port von ttyd, nur intern | `webkonsole/start.sh` und `nginx.conf` (`proxy_pass`) | 7681 |
 | Version des Backends | Release-Tag, Argument von `start.sh` | z. B. `v1.0.2` |
 
-`index.html` lädt `config.js` vor `app.js`. Für eine andere Umgebung, zum Beispiel den Server in Auftrag 2, wird beim Deployment nur `config.js` ersetzt. Der Code bleibt gleich.
+`index.html` lädt `config.js` vor `app.js`. Für eine andere Umgebung wird nur `config.js` ersetzt, der Code bleibt gleich. Auf AWS schreibt OpenTofu diese Datei (siehe [`INFRASTRUKTUR.md`](INFRASTRUKTUR.md)).
 
 ## Versionsabfrage
 
@@ -116,7 +116,7 @@ Eine Web-Konsole startet für jeden, der die URL kennt, ein Programm auf dem Ser
 | `--max-clients 10` und `-Xmx32m` | begrenzen den Speicher gegen Denial of Service |
 | Das Spiel liest nur Zahlen | Jede andere Eingabe beendet das Spiel. Ausgeführt wird nichts davon |
 
-Für den Betrieb auf einem Server (Auftrag 2) kommen dazu: HTTPS vor nginx und eine Firewall, die nur die Ports 80 und 443 öffnet.
+Für den Betrieb auf AWS (Auftrag 2) kommt eine Security Group dazu, die von aussen nur Port 80 öffnet. Warum es dort kein HTTPS gibt, steht in [`INFRASTRUKTUR.md`](INFRASTRUKTUR.md).
 
 ## Release
 
@@ -125,4 +125,4 @@ Ein Tag `v*` erzeugt den GitHub-Release mit zwei Dateien: `tictactest-<Version>.
 ## Bekannte Einschränkungen
 
 - Eine ungültige Eingabe beendet das Spiel und zeigt den Stacktrace (F2). Mit der Web-Konsole sehen das jetzt alle Spieler. Das ist ein guter Kandidat für einen Release, der nur das Backend ändert (Auftrag 3).
-- `config.js` im Frontend-Archiv zeigt auf `localhost`. In der Cloud ersetzt das Deployment diese Datei.
+- `config.js` im Frontend-Archiv zeigt auf `localhost`. Auf AWS schreibt OpenTofu die richtige, und das Deployment lädt die aus dem Archiv nicht hoch.

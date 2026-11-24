@@ -18,3 +18,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 bin/
+
+# OpenTofu: State und Plan-Dateien nie ins Repository, die Lock-Datei schon. .terraform/ schliesst schon .* oben aus
+*.tfstate
+*.tfstate.*
+*.tfplan
+!.terraform.lock.hcl

@@ -2,6 +2,13 @@
 
 Alle wichtigen Änderungen an TicTacTest, die neueste Version zuoberst. Wie die Versionsnummer entsteht, steht in [`RELEASE.md`](RELEASE.md).
 
+## 1.2.0 - 2026-11-24
+
+### Added
+- TicTacTest auf AWS: OpenTofu richtet in `infra/` eine EC2-Instanz mit der Web-Konsole als Dienst, eine feste Adresse (Elastic IP) und das Frontend als S3-Website ein. Aufbau und Entscheidungen stehen in [`INFRASTRUKTUR.md`](INFRASTRUKTUR.md)
+- Deployment von Hand: Jeder Befehl steht in [`docs/deployment.md`](docs/deployment.md). Ein neuer Release braucht weder `tofu apply` noch eine neue Instanz
+- Frontend: Link, der das Terminal in einem eigenen Tab öffnet
+
 ## 1.1.0 - 2026-11-17
 
 ### Added
