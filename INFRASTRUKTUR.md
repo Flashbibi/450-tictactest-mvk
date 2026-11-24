@@ -1,6 +1,6 @@
 # Infrastruktur: TicTacTest auf AWS mit OpenTofu
 
-M324 Webapp, Auftrag 2 · Stand: 18.11.2026
+M324 Webapp, Auftrag 2 · Stand: 24.11.2026
 
 OpenTofu stellt bereit, **wohin und wie** deployt wird: Instanz, Laufzeitumgebung, Dienst, Netzwerk und Hosting fürs Frontend. **Welche Version** läuft, entscheidet allein das Deployment ([`docs/deployment.md`](docs/deployment.md)). Ein neuer Release braucht deshalb weder `tofu apply` noch eine neue Instanz.
 

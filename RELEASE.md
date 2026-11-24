@@ -1,6 +1,6 @@
 # Release-Prozess
 
-Stand: 18.11.2026 · Workflow: [`.github/workflows/release.yml`](.github/workflows/release.yml) · Änderungen: [`CHANGELOG.md`](CHANGELOG.md)
+Stand: 24.11.2026 · Workflow: [`.github/workflows/release.yml`](.github/workflows/release.yml) · Änderungen: [`CHANGELOG.md`](CHANGELOG.md)
 
 ## Ablauf
 
