@@ -137,6 +137,8 @@ Was das bedeutet:
 
 Jedes Spiel ist eine eigene JVM mit rund 45 MB (RSS, gemessen in Auftrag 1). Eine t2.micro hat 1 GB Arbeitsspeicher. Betriebssystem, SSM-Agent, nginx und ttyd brauchen geschätzt 200 bis 250 MB. Es bleiben rund 750 MB, das reicht für etwa 16 Spiele. `max_clients = 10` lässt Reserve. Der elfte Besucher bekommt keine Verbindung, statt dass der Instanz der Speicher ausgeht.
 
+Gemessen auf der Instanz am 24.11.2026: ohne Spiel 656 MB verfügbar (`available` von `free -m`, nach der Einrichtung), eine laufende JVM mit einem offenen Spiel 42 MB RSS.
+
 t2.micro statt t3.micro: Beide haben 1 GB. t2 läuft standardmässig mit festen CPU-Credits, t3 im Modus *unlimited*, der bei Dauerlast zusätzlich kostet.
 
 ## Outputs
@@ -166,3 +168,71 @@ Keiner der Outputs ist ein Geheimnis, keiner braucht `sensitive = true`. Vertrau
 | S3 | wenige Cent | praktisch nichts |
 
 Am Ende einer Session stoppt das Learner Lab die Instanz. Was dann noch kostet, sind Elastic IP und Volume, zusammen rund 4 USD im Monat. Wird die Infrastruktur länger nicht gebraucht: `tofu -chdir=infra destroy`. Neu aufbauen und deployen dauert danach rund 10 Minuten.
+
+## Protokoll
+
+Durchgeführt am 24.11.2026 im AWS Learner Lab, Region us-east-1.
+
+### Einrichtung
+
+| Was | Beobachtung |
+|---|---|
+| Erster `apply` mit `aws_s3_bucket` | abgebrochen: Die Service Control Policy des Learner Labs verbietet `s3:GetBucketObjectLockConfiguration` („is not authorized to perform: s3:GetBucketObjectLockConfiguration on resource: "arn:aws:s3:::tictactest-artifacts-…" with an explicit deny in a service control policy“, ebenso beim Frontend-Bucket). Die Security Group und die zwei leeren Buckets waren schon angelegt. Lösung: Buckets mit der AWS CLI, siehe „Buckets im Learner Lab“. Die zwei leeren Buckets wurden gelöscht, die Security Group weiterverwendet |
+| `tofu apply` | 9 Ressourcen: die Security Group im ersten Versuch (5 s), die übrigen 8 im zweiten Versuch in 28 s. Die Bucket-Policy ging ohne `AccessDenied` durch |
+| Erster Start bis die Web-Konsole antwortet | rund 1 Minute |
+| Installierte Versionen | Java 25.0.5.1 (`java-25-amazon-corretto-headless-25.0.5.1.2-1.amzn2023.1`), nginx 1.30.7 (`nginx-1.30.7-1.amzn2023.0.1`), ttyd 1.7.7 |
+| Dienst | `enabled`, ttyd läuft als `tictactest`, nginx-Worker als `nginx`, nginx-Master als `root`. cloud-init `status: done`, SSM `Online` |
+| Port 7681 von aussen | nicht erreichbar |
+| Absturz (`systemctl kill -s KILL tictactest`) | nach 5,2 Sekunden neu gestartet und nach 5,9 Sekunden wieder aktiv, `NRestarts=1`, Version weiter 1.1.0 |
+
+### Deployments
+
+| Release | `tofu apply` | Instanz | Backend | Frontend | Im Browser gespielt | `tofu plan` danach |
+|---|---|---|---|---|---|---|
+| A: 1.1.0 | nur einmal, für die Infrastruktur | `i-0fc896785881f5d84` | 1.1.0 | 1.1.0 | ja | No changes |
+| B: 1.2.0 | nein | dieselbe (`i-0fc896785881f5d84`) | 1.2.0 | 1.2.0, mit Link | ja, der Link öffnet das Terminal | No changes |
+
+Ein Deployment nach [`docs/deployment.md`](docs/deployment.md) dauerte 27 Sekunden (1.1.0) und 25 Sekunden (1.2.0). `tofu plan` meldete beide Male wörtlich: „No changes. Your infrastructure matches the configuration.“
+
+### Experiment 1: Learner-Lab-Session beenden und neu starten
+
+| Frage | Beobachtung |
+|---|---|
+| Läuft die App wieder, ohne dass man etwas tut? | ja. Das Learner Lab hat die Instanz beim Beenden gestoppt und bei „Start Lab“ von selbst wieder gestartet (`LaunchTime` 12:34:02 → 13:10:17 UTC). `start-instances` war nicht nötig. Der Dienst war 15 Sekunden nach dem Start aktiv und hat vorher `tictactest.jar` und `version.txt` aus dem Artefakt-Bucket geholt (`download: s3://…/backend/tictactest.jar`), `NRestarts=0` |
+| Ist die URL gleich geblieben? | ja, `http://32.201.240.253/` (Elastic IP) |
+| Läuft dieselbe Version wie vorher? | ja, 1.2.0, ohne neues Deployment |
+| `tofu plan` danach | No changes |
+
+### Experiment 2: Einrichtung ändern (`max_clients` 10 → 8)
+
+| Frage | Beobachtung |
+|---|---|
+| Was zeigt `tofu plan`? | `Plan: 1 to add, 1 to change, 1 to destroy.` `aws_instance.web` must be replaced, weil sich `user_data` ändert (`# forces replacement`): in der Unit `--max-clients 10` → `--max-clients 8`. `aws_eip.web` wird nur angepasst (update in-place, neue Instanz) |
+| Was passiert mit der Instanz? | Sie wird ersetzt: `i-0fc896785881f5d84` gelöscht (31 s), `i-0f7a07e53237859e7` neu erstellt (15 s) und eingerichtet |
+| Und mit der IP? | bleibt gleich, `32.201.240.253`. Die Elastic IP wird nur der neuen Instanz zugeordnet |
+| Und mit der laufenden Version? | bleibt 1.2.0, ohne Deployment. Der Dienst holt das JAR beim ersten Start aus dem Artefakt-Bucket |
+| Wie lange war die Web-Konsole weg? | rund 2 Minuten (Prüfung alle 5 Sekunden: weg ab 14:14:23, wieder da um 14:16:26) |
+
+Danach zurück auf `max_clients = 10`: wieder 1 to add, 1 to change, 1 to destroy, neue Instanz `i-0caaadc72dd2d8e85`, Version 1.2.0, `tofu plan` danach No changes.
+
+### Experiment 3: `tofu destroy` und danach `tofu apply`
+
+| Wert | vorher | nachher |
+|---|---|---|
+| `frontend_url` | `http://tictactest-frontend-827848230032.s3-website-us-east-1.amazonaws.com` | gleich |
+| `web_console_url` | `http://32.201.240.253/` | `http://32.194.131.21/` |
+| `instance_id` | `i-0caaadc72dd2d8e85` | `i-04243f6a918a83990` |
+| `artifacts_bucket` | `tictactest-artifacts-827848230032` | gleich |
+| `frontend_bucket` | `tictactest-frontend-827848230032` | gleich |
+
+`destroy` löschte alle 9 Ressourcen, die Buckets samt Inhalt (`delete: …` und `remove_bucket: …` von `aws s3 rb --force`). Nach 2 Minuten Wartezeit legte `apply` die 9 Ressourcen wieder an, `make_bucket` ging beim ersten Versuch durch. Die Bucket-Namen und damit die `frontend_url` sind gleich geblieben, neu sind nur die Instanz und die Elastic IP.
+
+Was nötig war, bis wieder dieselbe Version lief: Die neue Instanz richtete sich selbst ein, die Web-Konsole antwortete rund 45 Sekunden nach dem `apply`. Ohne Deployment gaben `version.txt` und das Frontend aber 404, weil beide Buckets leer waren. Erst ein neues Deployment von 1.2.0 nach `docs/deployment.md` (24 Sekunden) brachte alles zurück, mit `config.js` auf die neue IP. Von `destroy` bis wieder 1.2.0 lief: 4 Minuten 46 Sekunden, davon 2 Minuten Wartezeit.
+
+### GitHub Actions gesperrt
+
+| Was | Beobachtung |
+|---|---|
+| Checks für PR #19 | keine. GitHub hat Actions für das Repository gesperrt, im Actions-Tab steht „GitHub Actions is currently disabled for this repository. Please reach out to GitHub Support for assistance.“ Der letzte Lauf war am 17.11.2026 |
+| Ersatz für die Checks | lokal am 24.11.2026: `./gradlew clean check` BUILD SUCCESSFUL, Instruction Coverage main 97.6 %, Branch 97.6 % |
+| Release 1.2.0 | ohne Actions erstellt, mit denselben Schritten wie `release.yml`, vom Commit `e0b32fc` auf `infrastruktur`. PR #19 bleibt offen, bis Actions wieder läuft |
