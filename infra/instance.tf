@@ -45,7 +45,7 @@ resource "aws_instance" "web" {
 
   # Einrichtung beim ersten Start: Java, nginx, ttyd und der Dienst. Keine Version des Spiels.
   user_data = templatefile("${path.module}/setup.sh.tftpl", {
-    artifacts_bucket = aws_s3_bucket.artifacts.bucket
+    artifacts_bucket = terraform_data.bucket["artifacts"].output.name
     region           = var.region
     max_clients      = var.max_clients
     ttyd_version     = var.ttyd_version

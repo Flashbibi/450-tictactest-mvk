@@ -29,7 +29,7 @@ Deployment (von Hand, in Auftrag 3 die Pipeline)
 | [`infra/variables.tf`](infra/variables.tf) | Region, Instanztyp, höchstens gleichzeitige Spiele, Version und Prüfsumme von ttyd |
 | [`infra/instance.tf`](infra/instance.tf) | AMI, Instance Profile, Security Group, Instanz, Elastic IP |
 | [`infra/setup.sh.tftpl`](infra/setup.sh.tftpl) | Einrichtung der Instanz beim ersten Start (`user_data`) |
-| [`infra/buckets.tf`](infra/buckets.tf) | privater Artefakt-Bucket, Frontend-Bucket als Website, `config.js` |
+| [`infra/buckets.tf`](infra/buckets.tf) | privater Artefakt-Bucket und Frontend-Bucket (angelegt mit der AWS CLI, siehe „Buckets im Learner Lab“), Website-Einstellungen, `config.js` |
 | [`infra/outputs.tf`](infra/outputs.tf) | Werte für Benutzer und Pipeline |
 | `infra/.terraform.lock.hcl` | genaue Version und Prüfsummen des AWS-Providers. Gehört ins Repository, damit alle dieselbe Version verwenden |
 
@@ -41,6 +41,8 @@ tofu -chdir=infra plan       # zeigen, was sich ändern würde
 tofu -chdir=infra apply      # Infrastruktur erstellen oder anpassen
 tofu -chdir=infra output     # Adressen und Namen anzeigen
 ```
+
+OpenTofu braucht dafür auch die AWS CLI, denn sie legt die beiden Buckets an.
 
 ## Artefakt-Bezug: privater S3-Bucket
 
@@ -105,9 +107,25 @@ Bewusst nicht offen:
 - **443 eingehend (HTTPS):** Dafür bräuchte es ein Zertifikat für eine eigene Domain, und die gibt es im Learner Lab nicht. Auch die S3-Website kann nur HTTP. Darum läuft hier alles über HTTP, und auf Port 443 hört nichts.
 - **Alle anderen ausgehenden Ports:** DNS, Zeit und Metadaten-Dienst des VPC filtert eine Security Group nicht, dafür braucht es keine Regel.
 
+## Buckets im Learner Lab: angelegt mit der AWS CLI
+
+Üblich wäre die Ressource `aws_s3_bucket` mit `bucket_prefix` für einen eindeutigen Namen und `force_destroy = true`. Im Learner Lab scheitert sie: Nach dem Erstellen und bei jedem `plan` liest `aws_s3_bucket` die Object-Lock-Einstellung des Buckets (`s3:GetBucketObjectLockConfiguration`). Genau das verbietet eine Service Control Policy der Organisation des Learner Labs. `tofu apply` bricht deshalb mit `AccessDenied … with an explicit deny in a service control policy` ab, obwohl der Bucket schon angelegt ist. Im eigenen Konto lässt sich das nicht ändern.
+
+Darum legt die AWS CLI die beiden Buckets an:
+
+- `terraform_data.bucket` führt beim Erstellen `aws s3 mb` aus und beim Löschen `aws s3 rb --force`, das den Bucket samt Inhalt entfernt wie `force_destroy`.
+- Alle Einstellungen verwaltet OpenTofu weiter selbst, mit eigenen Ressourcen: Website, Public Access Block, Bucket-Policy und `config.js`. Diese Ressourcen lesen die Object-Lock-Einstellung nicht.
+- Die Namen sind `tictactest-artifacts-<Konto-ID>` und `tictactest-frontend-<Konto-ID>`. `bucket_prefix` gibt es nur bei `aws_s3_bucket`. Die Konto-ID macht die Namen weltweit eindeutig, ohne Zufall. Sie ist laut AWS kein Geheimnis.
+
+Was das bedeutet:
+
+- Nach `tofu destroy` und `tofu apply` heissen die Buckets wieder gleich, die `frontend_url` bleibt also dieselbe.
+- OpenTofu verwaltet die Einstellungen der Buckets, aber nicht die Buckets selbst. Löscht jemand einen Bucket von Hand, sieht `tofu plan` das nicht.
+- Wo `tofu apply` läuft, braucht es die AWS CLI. Für das Deployment braucht es sie sowieso.
+
 ## Frontend
 
-- Der Bucket heisst `tictactest-frontend-<Zufall>` (`bucket_prefix`), weil Bucket-Namen weltweit eindeutig sein müssen.
+- Der Bucket heisst `tictactest-frontend-<Konto-ID>`, siehe oben.
 - `aws_s3_bucket_website_configuration` macht ihn zur Static Website mit `index.html`.
 - Der Public Access Block erlaubt öffentliche Bucket-Policies, öffentliche ACLs bleiben gesperrt. Die Bucket-Policy erlaubt allen nur `s3:GetObject`, also lesen.
 - **`config.js`** schreibt OpenTofu selbst als `aws_s3_object`, mit der Elastic IP. Nur die Infrastruktur kennt diese Adresse, im Code steht sie nirgends.
@@ -130,8 +148,8 @@ t2.micro statt t3.micro: Beide haben 1 GB. t2 läuft standardmässig mit festen 
 | `version_url` | Prüfen nach dem Deployment | nein, öffentlich |
 | `region` | Deployment | nein |
 | `instance_id` | Deployment: SSM-Befehl an die Instanz | nein. Intern, aber ohne Zugangsdaten nutzlos |
-| `artifacts_bucket` | Deployment: hierhin kommt das JAR | nein. Der Name verrät nichts, der Bucket ist privat |
-| `frontend_bucket` | Deployment: hierhin kommt das Frontend | nein |
+| `artifacts_bucket` | Deployment: hierhin kommt das JAR | nein. Der Name enthält nur die Konto-ID, und der Bucket ist privat |
+| `frontend_bucket` | Deployment: hierhin kommt das Frontend | nein, er steht ohnehin in der öffentlichen Adresse |
 
 Keiner der Outputs ist ein Geheimnis, keiner braucht `sensitive = true`. Vertraulich sind dagegen:
 

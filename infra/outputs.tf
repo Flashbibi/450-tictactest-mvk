@@ -29,10 +29,10 @@ output "instance_id" {
 
 output "artifacts_bucket" {
   description = "Privater Bucket: hierhin kommen das JAR und seine Version"
-  value       = aws_s3_bucket.artifacts.bucket
+  value       = terraform_data.bucket["artifacts"].output.name
 }
 
 output "frontend_bucket" {
   description = "Öffentlicher Bucket: hierhin kommt das Frontend, ausser config.js"
-  value       = aws_s3_bucket.frontend.bucket
+  value       = terraform_data.bucket["frontend"].output.name
 }

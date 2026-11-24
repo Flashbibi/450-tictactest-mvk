@@ -21,7 +21,7 @@ tofu -chdir=infra init
 tofu -chdir=infra apply
 ```
 
-Eine neue Instanz richtet sich beim ersten Start selbst ein (`infra/setup.sh.tftpl`). Das dauert einige Minuten. Fertig ist sie, wenn die Web-Konsole antwortet:
+`apply` legt die beiden Buckets mit der AWS CLI an, der Grund steht in [`INFRASTRUKTUR.md`](../INFRASTRUKTUR.md). Eine neue Instanz richtet sich beim ersten Start selbst ein (`infra/setup.sh.tftpl`). Das dauert einige Minuten. Fertig ist sie, wenn die Web-Konsole antwortet:
 
 ```bash
 until curl -fs -o /dev/null "$(tofu -chdir=infra output -raw web_console_url)"; do sleep 10; done
@@ -38,7 +38,7 @@ FRONTEND_BUCKET=$(tofu -chdir=infra output -raw frontend_bucket)
 export AWS_DEFAULT_REGION=$(tofu -chdir=infra output -raw region)
 ```
 
-Die Outputs sind die Schnittstelle zwischen Infrastruktur und Deployment. Die Namen der Buckets enthalten eine Zufallszahl (`bucket_prefix`), darum stehen sie nirgends fest im Code.
+Die Outputs sind die Schnittstelle zwischen Infrastruktur und Deployment. Die Namen der Buckets enthalten die Konto-ID, darum stehen sie nirgends fest im Code.
 
 ## 2. Release herunterladen
 
