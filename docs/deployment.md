@@ -182,7 +182,32 @@ Deployt werden Backend und Frontend dieser Version, mit denselben Prüfungen wie
 
 ## Nachweis
 
-Wird nach den Tests ausgefüllt.
+Durchgeführt am 25.11.2026 im AWS Learner Lab. Die Links führen zu den Läufen auf GitHub Actions, Uhrzeiten in UTC.
+
+### Die vier Fälle aus Teil 6
+
+| Fall | Auslöser | Lauf | `changes` | deployt | danach Frontend · Backend |
+|---|---|---|---|---|---|
+| nur Frontend | Tag v1.2.1 | [release](https://github.com/Flashbibi/450-tictactest-mvk/actions/runs/45585324563) | backend=false, frontend=true | nur Frontend | 1.2.1 · 1.2.0 |
+| nur Backend | Tag v1.2.2 | [release](https://github.com/Flashbibi/450-tictactest-mvk/actions/runs/45586431162) | backend=true, frontend=false | nur Backend | 1.2.1 · 1.2.2 |
+| beides | Tag v1.3.0 | [release](https://github.com/Flashbibi/450-tictactest-mvk/actions/runs/45587892163) | backend=true, frontend=true | beides | 1.3.0 · 1.3.0 |
+| Push auf main ohne Tag | Merge von PR #20 | [build](https://github.com/Flashbibi/450-tictactest-mvk/actions/runs/45584590514) | – | nichts: weder release noch deploy gestartet | unverändert |
+
+Linus hat nach jedem Release im Browser geprüft: bei 1.2.1 und 1.2.2 die Versionen unten auf der Seite, die blaue Überschrift und X rot, O blau im Terminal, bei 1.3.0 die farbigen X und O in den Spielregeln und die grauen freien Felder. Alles stimmte.
+
+Bei 1.2.1 sperrte zuerst der Webfilter des Netzwerks (FortiGuard) die Adresse der Web-Konsole. Die Version des Backends wurde darum nach diesem Release über SSM auf der Instanz gelesen. Danach lief alles über ein anderes Netz. Die Pipeline war nicht betroffen, sie prüft von GitHub aus.
+
+### Tests aus Teil 5 und weitere Prüfungen
+
+| Test | Lauf | Ergebnis |
+|---|---|---|
+| Rollback: 1.3.0 läuft, 1.2.0 von Hand deployt | [deploy](https://github.com/Flashbibi/450-tictactest-mvk/actions/runs/45588587504) | grün in 37 Sekunden. Frontend und Backend 1.2.0, im Browser schwarze Überschrift und keine Farben |
+| zwei Deployments kurz hintereinander | [deploy](https://github.com/Flashbibi/450-tictactest-mvk/actions/runs/45588780420), [deploy](https://github.com/Flashbibi/450-tictactest-mvk/actions/runs/45588798013) | Der zweite Lauf war `pending`, solange der erste lief (09:47:44 bis 09:48:17), und lief danach (09:48:18 bis 09:48:40). Beide grün, danach überall 1.3.0 |
+| kaputter Release v1.3.1 | [release](https://github.com/Flashbibi/450-tictactest-mvk/actions/runs/45589393361) | wie gewollt rot: `release` und `changes` grün (backend=true, frontend=false), im Job `deploy` scheiterte „Starttest des JARs“ mit „Error: Could not find or load main class ch.bbw.m450.tictactoe.Main“ und „Das JAR aus Release v1.3.1 startet nicht. Nichts wurde deployt, die bisherige Version läuft weiter“. Alle Schritte danach übersprungen, Frontend und Backend weiter 1.3.0 |
+| Fix v1.3.2 | [release](https://github.com/Flashbibi/450-tictactest-mvk/actions/runs/45590147198) | grün, nur Backend deployt, danach Frontend 1.3.0 und Backend 1.3.2. Vom Start des Laufs nach dem Push des Tags bis zur grünen Versionsprüfung 66 Sekunden |
+| ungültige Zugangsdaten, danach scripts/github-secrets.sh und Re-run | [deploy](https://github.com/Flashbibi/450-tictactest-mvk/actions/runs/45590721711) | Versuch 1 rot bei „AWS-Zugangsdaten prüfen“ (`InvalidClientTokenId`, „The security token included in the request is invalid“), alles danach übersprungen. Versuch 2 nach `scripts/github-secrets.sh` grün, Frontend und Backend 1.3.2. Getestet mit einem ungültigen Token, nicht mit einem echt abgelaufenen. Weil das Token zum Test „abgelaufen“ hiess, hat GitHub dieses Wort in der Fehlermeldung als `***` maskiert |
+| nach tofu destroy und tofu apply | [deploy](https://github.com/Flashbibi/450-tictactest-mvk/actions/runs/45593612308) | 9 Ressourcen gelöscht und 9 neu erstellt. In den Variables änderten sich nur `INSTANCE_ID`, `WEB_CONSOLE_URL` und `VERSION_URL`. Danach grün, Frontend und Backend 1.3.2, im Browser gespielt, `tofu plan` meldet „No changes“ |
+| Logs | – | in keinem Log von release und deploy Zugangsdaten (11 Logs durchsucht, 0 Treffer) |
 
 ## Reflexion und Ausblick: Umgebungen und Promotion
 
