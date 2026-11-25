@@ -2,6 +2,11 @@
 
 Alle wichtigen Änderungen an TicTacTest, die neueste Version zuoberst. Wie die Versionsnummer entsteht, steht in [`RELEASE.md`](RELEASE.md).
 
+## 1.2.2 - 2026-11-25
+
+### Changed
+- Im Terminal ist X rot und O blau
+
 ## 1.2.1 - 2026-11-25
 
 ### Added
