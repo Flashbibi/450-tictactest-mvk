@@ -15,7 +15,8 @@ Ins Terminal klicken, die Nummer eines freien Feldes (0 bis 8) tippen und Enter 
 
 - **Auftrag 1, Web-Konsole:** fertig, siehe [`WEBKONSOLE.md`](WEBKONSOLE.md)
 - **Auftrag 2, Infrastruktur mit OpenTofu:** fertig. Die Konfiguration steht in [`infra/`](infra), die Entscheidungen und das Protokoll der Deployments und Experimente in [`INFRASTRUKTUR.md`](INFRASTRUKTUR.md), jeder Befehl eines Deployments in [`docs/deployment.md`](docs/deployment.md)
-- **Auftrag 3, automatisches Deployment bei einem Release:** offen. GitHub hat GitHub Actions für dieses Repository gesperrt („GitHub Actions is currently disabled for this repository“). Seit dem 17.11.2026 startet kein Workflow mehr, und aufheben kann die Sperre nur der GitHub Support. Darum ist Release 1.2.0 ohne Actions entstanden, mit denselben Schritten wie der Release-Workflow, und der Pull Request für Auftrag 2 wurde nach einer lokalen Prüfung ohne CI-Checks gemergt (siehe `INFRASTRUKTUR.md`, Protokoll)
+- **Auftrag 3, automatisches Deployment bei einem Release:** Jeder Release deployt nur die Teile, die sich seit dem vorherigen Release geändert haben ([`deploy.yml`](.github/workflows/deploy.yml), aufgerufen von [`release.yml`](.github/workflows/release.yml)). Jede veröffentlichte Version lässt sich von Hand erneut deployen. Secrets-Konzept, Ablauf, Nachweis und Reflexion stehen in [`docs/deployment.md`](docs/deployment.md)
+- Vom 17. bis 24.11.2026 hatte GitHub Actions für dieses Repository gesperrt. Release 1.2.0 ist deshalb ohne Actions entstanden, mit denselben Schritten wie der Release-Workflow, und der Pull Request für Auftrag 2 wurde nach einer lokalen Prüfung ohne CI-Checks gemergt (siehe `INFRASTRUKTUR.md`, Protokoll)
 
 ## Dokumentation
 
@@ -25,7 +26,7 @@ Ins Terminal klicken, die Nummer eines freien Feldes (0 bis 8) tippen und Enter 
 | Änderungen pro Version | [`CHANGELOG.md`](CHANGELOG.md) |
 | Web-Konsole, lokal im DevContainer | [`WEBKONSOLE.md`](WEBKONSOLE.md) |
 | Infrastruktur auf AWS | [`INFRASTRUKTUR.md`](INFRASTRUKTUR.md) |
-| Deployment von Hand | [`docs/deployment.md`](docs/deployment.md) |
+| Deployment: automatisch, von Hand, Secrets-Konzept | [`docs/deployment.md`](docs/deployment.md) |
 | DevContainer | [`DEVCONTAINER.md`](DEVCONTAINER.md), [`DEVCONTAINER-KONZEPT.md`](DEVCONTAINER-KONZEPT.md) |
 | Tests | [`TESTKONZEPT.md`](TESTKONZEPT.md), [`TESTDOKUMENTATION.md`](TESTDOKUMENTATION.md) |
 | Test Coverage | [`COVERAGE-DESIGN.md`](COVERAGE-DESIGN.md), [`COVERAGE-GATE.md`](COVERAGE-GATE.md) |

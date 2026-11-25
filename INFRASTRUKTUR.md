@@ -156,7 +156,7 @@ t2.micro statt t3.micro: Beide haben 1 GB. t2 läuft standardmässig mit festen 
 Keiner der Outputs ist ein Geheimnis, keiner braucht `sensitive = true`. Vertraulich sind dagegen:
 
 - die **AWS-Zugangsdaten** in `~/.aws/credentials`. Im Learner Lab gelten sie nur für eine Session. Sie kommen nie ins Repository und nie auf die Instanz.
-- der **State** `terraform.tfstate`. Er enthält alle Details der Ressourcen, in anderen Projekten oft auch Passwörter. Er liegt nur lokal und nie im Repository. Für die Pipeline in Auftrag 3 muss er an einen gemeinsamen Ort, zum Beispiel in einen S3-Bucket als Backend.
+- der **State** `terraform.tfstate`. Er enthält alle Details der Ressourcen, in anderen Projekten oft auch Passwörter. Er liegt nur lokal und nie im Repository. Die Pipeline aus Auftrag 3 braucht ihn nicht: Die Werte, die sie kennen muss, überträgt `scripts/github-variables.sh` als GitHub Variables. Arbeiten mehrere Personen an der Infrastruktur, gehört er an einen gemeinsamen Ort, zum Beispiel in einen S3-Bucket als Backend.
 
 ## Kosten im Learner Lab
 

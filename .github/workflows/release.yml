@@ -61,3 +61,42 @@ jobs:
           } > notes.md
           gh release create "$GITHUB_REF_NAME" "build/libs/tictactest-$version.jar" "build/tictactest-frontend-$version.zip" \
             --title "TicTacTest $GITHUB_REF_NAME" --notes-file notes.md
+
+  # Auftrag 3: Was hat sich seit dem vorherigen Release geändert? Verglichen wird mit dem vorherigen Release-Tag,
+  # nicht mit dem letzten Commit. Regeln in scripts/changes.sh und docs/deployment.md
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.diff.outputs.version }}
+      backend: ${{ steps.diff.outputs.backend }}
+      frontend: ${{ steps.diff.outputs.frontend }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # die ganze Historie mit allen Tags, sonst findet git describe den vorherigen Release nicht
+
+      - name: Geänderte Teile seit dem vorherigen Release
+        id: diff
+        run: |
+          set -o pipefail # schlägt changes.sh fehl, soll der Job fehlschlagen und nicht still nichts deployen
+          {
+            echo "version=${GITHUB_REF_NAME#v}"
+            scripts/changes.sh "$GITHUB_REF_NAME"
+          } | tee -a "$GITHUB_OUTPUT"
+
+  # Nach dem Release nur die geänderten Teile deployen. Hat sich weder Backend noch Frontend geändert, entfällt der Job.
+  # Der Deploy-Workflow steht in deploy.yml, damit er auch von Hand mit einer beliebigen Version läuft
+  deploy:
+    needs: [release, changes]
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/deploy.yml
+    with:
+      version: ${{ needs.changes.outputs.version }}
+      backend: ${{ needs.changes.outputs.backend == 'true' }}
+      frontend: ${{ needs.changes.outputs.frontend == 'true' }}
+    secrets: inherit
