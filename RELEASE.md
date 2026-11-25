@@ -17,6 +17,8 @@ Git-Tag erstellen und zu GitHub pushen
     ↓
 GitHub Actions: Tests → JAR und Frontend-Archiv → GitHub Release mit beiden Dateien
     ↓
+GitHub Actions: die geänderten Teile auf AWS deployen und prüfen (ab 1.2.1, siehe docs/deployment.md)
+    ↓
 Release-Assets herunterladen und testen
 ```
 
