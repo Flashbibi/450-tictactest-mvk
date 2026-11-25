@@ -2,6 +2,11 @@
 
 Alle wichtigen Änderungen an TicTacTest, die neueste Version zuoberst. Wie die Versionsnummer entsteht, steht in [`RELEASE.md`](RELEASE.md).
 
+## 1.3.2 - 2026-11-25
+
+### Fixed
+- Das JAR startet wieder: Das Manifest nennt wieder die richtige Main-Class (absichtlicher Fehler aus 1.3.1)
+
 ## 1.3.1 - 2026-11-25
 
 ### Changed

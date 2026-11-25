@@ -6,7 +6,7 @@ plugins {
 }
 
 // Version der Anwendung (MAJOR.MINOR.PATCH), siehe RELEASE.md. Der Release-Tag ist "v" + diese Version
-version = '1.3.1'
+version = '1.3.2'
 
 repositories {
 	mavenCentral()
@@ -91,7 +91,7 @@ application {
 // Ausführbares JAR: Mit der Main-Class im Manifest startet "java -jar tictactest-<Version>.jar" das Spiel
 jar {
 	manifest {
-		attributes 'Main-Class': 'ch.bbw.m450.tictactoe.Main' // absichtlich falsch, Test für Auftrag 3
+		attributes 'Main-Class': application.mainClass.get()
 	}
 }
 
