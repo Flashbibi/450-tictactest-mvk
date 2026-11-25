@@ -90,10 +90,10 @@ class TicTacToeTest implements WithAssertions {
 	}
 
 	@Test
-	void printsStonesBoldAndFreeFieldsGray() {
+	void printsStonesBoldInColorAndFreeFieldsGray() {
 		var text = TicTacToeMain.toString(boardOf("XO. ... ..."));
 
-		assertThat(text).startsWith("\033[1mX\033[0m  \033[1mO\033[0m  \033[37m2\033[0m  \n");
+		assertThat(text).startsWith("\033[1m\033[31mX\033[0m  \033[1m\033[34mO\033[0m  \033[37m2\033[0m  \n");
 	}
 
 	// ---- play ----
