@@ -2,6 +2,14 @@
 
 Alle wichtigen Änderungen an TicTacTest, die neueste Version zuoberst. Wie die Versionsnummer entsteht, steht in [`RELEASE.md`](RELEASE.md).
 
+## 1.2.1 - 2026-11-25
+
+### Added
+- Automatisches Deployment: Jeder Release deployt die Teile, die sich seit dem vorherigen Release geändert haben, auf AWS und prüft die laufende Version. Jede veröffentlichte Version lässt sich von Hand erneut deployen. Ablauf und Secrets-Konzept stehen in [`docs/deployment.md`](docs/deployment.md)
+
+### Changed
+- Frontend: Die Überschrift ist blau
+
 ## 1.2.0 - 2026-11-24
 
 ### Added
