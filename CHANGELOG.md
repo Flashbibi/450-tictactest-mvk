@@ -2,6 +2,14 @@
 
 Alle wichtigen Änderungen an TicTacTest, die neueste Version zuoberst. Wie die Versionsnummer entsteht, steht in [`RELEASE.md`](RELEASE.md).
 
+## 1.3.0 - 2026-11-25
+
+### Added
+- Frontend: Die Spielregeln zeigen X und O in denselben Farben wie das Terminal
+
+### Changed
+- Im Terminal sind die Nummern der freien Felder grau, damit X und O besser auffallen
+
 ## 1.2.2 - 2026-11-25
 
 ### Changed

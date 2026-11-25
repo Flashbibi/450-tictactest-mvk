@@ -32,3 +32,14 @@ footer a {
 h1 {
 	color: #1f5fbf;
 }
+
+/* dieselben Farben wie X und O im Terminal */
+.cross {
+	color: #c62828;
+	font-weight: bold;
+}
+
+.circle {
+	color: #1f5fbf;
+	font-weight: bold;
+}

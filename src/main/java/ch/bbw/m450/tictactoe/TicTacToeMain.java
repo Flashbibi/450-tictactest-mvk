@@ -42,7 +42,7 @@ public class TicTacToeMain {
 				var index = i * 3 + j;
 				String color = board[index] == Stone.CROSS ? "\033[31mX" : "\033[34mO"; // X rot, O blau
 				color = "\033[1m" + color + "\033[0m";
-				color = board[index] == null ? "\033[37m" + index + "\033[0m" : color;
+				color = board[index] == null ? "\033[90m" + index + "\033[0m" : color;
 				sb.append(color)
 						.append("  ");
 			}
