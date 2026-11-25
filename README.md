@@ -9,7 +9,7 @@ TicTacToe in der Konsole: Du spielst X, der Computer O. Projekt der Module M450 
 Ins Terminal klicken, die Nummer eines freien Feldes (0 bis 8) tippen und Enter drücken. Unten auf der Seite stehen die Versionen von Frontend und Backend.
 
 - Die Web-App läuft im AWS Learner Lab. Ausserhalb einer Lab-Session ist die EC2-Instanz gestoppt: Die Seite lädt, aber das Terminal bleibt leer, und das Backend ist „nicht erreichbar“. Nach dem Start des Labs läuft alles von selbst wieder, mit derselben Adresse und derselben Version.
-- Die Web-Konsole direkt, ohne Frontend: <http://32.194.131.21/>. Die laufende Version steht unter <http://32.194.131.21/version.txt>.
+- Die Web-Konsole direkt, ohne Frontend: <http://100.56.90.107/>. Die laufende Version steht unter <http://100.56.90.107/version.txt>.
 
 ## Stand
 

@@ -116,5 +116,10 @@ Ein Release gilt erst als erfolgreich, wenn die veröffentlichten Dateien getest
 | 1.0.2 | 26.10.2026 | Linus | ja | ja | – |
 | 1.1.0 | 17.11.2026 | Linus | ja | ja | ja |
 | 1.2.0 | 24.11.2026 | Linus | ja | ja | ja, auf AWS |
+| 1.2.1 | 25.11.2026 | Pipeline, Linus | ja (Pipeline) | – (nur Frontend deployt, kein Starttest) | ja, auf AWS |
+| 1.2.2 | 25.11.2026 | Pipeline, Linus | ja (Pipeline) | ja (Starttest) | ja, auf AWS |
+| 1.3.0 | 25.11.2026 | Pipeline, Linus | ja (Pipeline) | ja (Starttest) | ja, auf AWS |
+| 1.3.1 | 25.11.2026 | Pipeline | ja (Pipeline) | nein, startet nicht (Test) | – |
+| 1.3.2 | 25.11.2026 | Pipeline, Linus | ja (Pipeline) | ja (Starttest) | ja, auf AWS |
 
 1.2.0 ist ohne GitHub Actions erstellt, weil GitHub Actions für das Repository gesperrt hat (siehe `INFRASTRUKTUR.md`, Protokoll).
